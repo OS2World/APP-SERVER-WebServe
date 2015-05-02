@@ -1,0 +1,16 @@
+LIST OF CHANGES
+
+Version 1.1         (29 Apr 2015)
+   Fixed: number of clients wasn't being displayed.
+   Fixed: some source files weren't being added to the distribution.
+   Allowed for alternative hostnames for a domain.
+   Increased default max simultaneous clients to 100.
+   Added a timeout to deal with lazy bots.
+   File buffer size increased to 65536.
+   Improved transaction logging.
+   Added common log option.
+   Improvements to Setup program.
+
+Version 1.0         (25 Apr 2015)
+   Initial release.
+

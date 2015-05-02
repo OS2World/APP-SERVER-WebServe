@@ -1,0 +1,18 @@
+DEFINITION MODULE OpeningDialogue;
+
+        (****************************************************************)
+        (*                  PM Setup for web server                     *)
+        (*                      Opening dialogue                        *)
+        (*                                                              *)
+        (*    Started:        4 April 2015                              *)
+        (*    Last edited:    4 April 2015                              *)
+        (*    Status:         OK                                        *)
+        (*                                                              *)
+        (****************************************************************)
+
+PROCEDURE CreateMainDialogue (LocalRemote: CARDINAL;  TNImode: BOOLEAN);
+
+    (* Creates the main dialogue box. *)
+
+END OpeningDialogue.
+

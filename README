@@ -1,0 +1,53 @@
+WebServe - a lightweight web server for OS/2
+============================================
+
+This program is distributed as open-source freeware.
+
+   Author:  Peter Moylan
+   E-mail:  peter@pmoylan.org
+   Web:     http://www.pmoylan.org
+
+
+WHAT IS IT?
+
+This is a lightweight web server: lightweight in the sense that it
+provides the basics that any web server must have, but no complicated
+options. It might not suit you if you have complicated requirements,
+but it should correctly work for most basic web sites.
+
+PREREQUISITES
+
+Apart from the obvious network connectivity, all you need is to ensure
+that your system has its time zone correctly set. (Faulty clock settings
+make it harder for web clients or caches to know whether they have the
+current version of a file.) One way to do this is to get and install
+the program TZSet from the same place where you got this software.
+
+You must of course ensure that you own one or more domain names.
+(These can be purchased from a domain name registrar. Shop around, because
+prices vary enormously.) You also need to ensure that a nameserver
+somewhere is mapping these domain names into your IP address.
+
+INSTALLATION
+
+Create a suitable directory, e.g. D:\Servers\WebServe.  Unzip the zip
+file into that directory.  (If you are upgrading from an earlier
+version, unzip into the same directory as you used for that
+earlier version, so that you can continue to use your existing
+configuration data.)  Now you are ready to go.
+
+The program Setup.exe must be run to configure the server. Most
+settings can be left at their default values, but it is essential
+to specify your domains in the Domains page of the Setup notebook.
+
+RUNNING THE PROGRAM
+
+The program WebServe.exe is the actual server. Leave this running
+all of the time. (But you will need to restart it any time you change
+the Setup options. The present version does not automatically
+refresh the settins. Maybe in a later version.)
+
+There are no logging options in this version. You get a detailed
+transaction log both on the screen and in a file TRANSLOG.TXT.
+This will probably be improved in a later version.
+

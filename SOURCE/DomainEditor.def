@@ -1,0 +1,22 @@
+DEFINITION MODULE DomainEditor;
+
+        (************************************************************)
+        (*                                                          *)
+        (*                  PM Setup for web server                 *)
+        (*    The settings notebook for a domain, and its frame     *)
+        (*                                                          *)
+        (*    Started:        16 April 2015                         *)
+        (*    Last edited:    17 April 2015                         *)
+        (*    Status:         OK                                    *)
+        (*                                                          *)
+        (************************************************************)
+
+
+FROM OS2 IMPORT HWND;
+
+PROCEDURE Edit (owner: HWND;  VAR (*INOUT*) name: ARRAY OF CHAR);
+
+    (* Opens and allows editing of the main dialogue box for this domain. *)
+
+END DomainEditor.
+

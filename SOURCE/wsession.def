@@ -1,0 +1,61 @@
+(**************************************************************************)
+(*                                                                        *)
+(*  Web server session manager                                            *)
+(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*                                                                        *)
+(*  This program is free software: you can redistribute it and/or modify  *)
+(*  it under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 3 of the License, or     *)
+(*  (at your option) any later version.                                   *)
+(*                                                                        *)
+(*  This program is distributed in the hope that it will be useful,       *)
+(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
+(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
+(*  GNU General Public License for more details.                          *)
+(*                                                                        *)
+(*  You should have received a copy of the GNU General Public License     *)
+(*  along with this program.  If not, see <http://www.gnu.org/licenses/>. *)
+(*                                                                        *)
+(*  To contact author:   http://www.pmoylan.org   peter@pmoylan.org       *)
+(*                                                                        *)
+(**************************************************************************)
+
+DEFINITION MODULE WSession;
+
+        (********************************************************)
+        (*                                                      *)
+        (*           Session handler for web server             *)
+        (*                                                      *)
+        (*  Programmer:         P. Moylan                       *)
+        (*  Started:            1 March 2015                    *)
+        (*  Last edited:        29 April 2015                   *)
+        (*  Status:             OK                              *)
+        (*                                                      *)
+        (********************************************************)
+
+
+FROM Sockets IMPORT
+    (* type *)  Socket, SockAddr;
+
+FROM TransLog IMPORT
+    (* type *)  TransactionLogID;
+
+
+PROCEDURE NewSession (S: Socket;  addr: SockAddr;
+                         LogID: TransactionLogID): BOOLEAN;
+
+    (* Starts and runs a client session.  The session runs in a         *)
+    (* separate thread; this procedure returns after starting the       *)
+    (* session, it does not wait until the session is over.             *)
+
+PROCEDURE SetSessionParameters (MaxSessions, seconds: CARDINAL);
+
+    (* Sets the maximum number of sessions allowed in parallel, and the time    *)
+    (* before an idle session times out.                                        *)
+
+PROCEDURE NumberOfClients(): CARDINAL;
+
+    (* Returns the number of clients who are currently logged on. *)
+
+END WSession.
+

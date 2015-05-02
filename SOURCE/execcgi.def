@@ -1,0 +1,51 @@
+(**************************************************************************)
+(*                                                                        *)
+(*  Web server session manager                                            *)
+(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*                                                                        *)
+(*  This program is free software: you can redistribute it and/or modify  *)
+(*  it under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 3 of the License, or     *)
+(*  (at your option) any later version.                                   *)
+(*                                                                        *)
+(*  This program is distributed in the hope that it will be useful,       *)
+(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
+(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
+(*  GNU General Public License for more details.                          *)
+(*                                                                        *)
+(*  You should have received a copy of the GNU General Public License     *)
+(*  along with this program.  If not, see <http://www.gnu.org/licenses/>. *)
+(*                                                                        *)
+(*  To contact author:   http://www.pmoylan.org   peter@pmoylan.org       *)
+(*                                                                        *)
+(**************************************************************************)
+
+DEFINITION MODULE ExecCGI;
+
+        (********************************************************)
+        (*                                                      *)
+        (*                 Running a CGI script                 *)
+        (*                                                      *)
+        (*  This is logically part of module Requests, but I'm  *)
+        (*  keeping it separate to simplify development and     *)
+        (*  testing.  I might want to move this code later.     *)
+        (*                                                      *)
+        (*  Programmer:         P. Moylan                       *)
+        (*  Started:            21 April 2015                   *)
+        (*  Last edited:        22 April 2015                   *)
+        (*  Status:             OK                              *)
+        (*                                                      *)
+        (********************************************************)
+
+
+PROCEDURE ExecProgram (progname: ARRAY OF CHAR;
+                            VAR (*IN*) langstr: ARRAY OF CHAR;
+                            VAR (*OUT*) tempfile: ARRAY OF CHAR);
+
+    (* Executes a CGI application.  progname specifies the program or   *)
+    (* script to be executed, optionally followed by a '?' followed by  *)
+    (* parameters to be sent to the program.  Program output is put in  *)
+    (* tempfile, which the caller must delete after use.                *)
+
+END ExecCGI.
+

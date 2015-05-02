@@ -1,0 +1,21 @@
+DEFINITION MODULE BigFrame;
+
+        (****************************************************************)
+        (*                                                              *)
+        (*                     PM Setup for web server                  *)
+        (*                                                              *)
+        (*        Started:        4 April 2015                          *)
+        (*        Last edited:    4 April 2015                          *)
+        (*        Status:         OK                                    *)
+        (*                                                              *)
+        (****************************************************************)
+
+
+IMPORT OS2;
+
+PROCEDURE OpenBigFrame (owner: OS2.HWND;  TNImode: BOOLEAN);
+
+    (* Creates the main dialogue box. *)
+
+END BigFrame.
+

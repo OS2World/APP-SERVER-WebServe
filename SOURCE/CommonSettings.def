@@ -1,0 +1,72 @@
+DEFINITION MODULE CommonSettings;
+
+        (****************************************************************)
+        (*                                                              *)
+        (*                 Setup program for web server                 *)
+        (*            Data common to the main Setup notebook            *)
+        (*                                                              *)
+        (*    Started:        4 April 2015                              *)
+        (*    Last edited:    5 April 2015                              *)
+        (*    Status:         OK                                        *)
+        (*                                                              *)
+        (****************************************************************)
+
+
+FROM OS2 IMPORT WM_USER, HWND;
+FROM Languages IMPORT LangHandle;
+
+CONST
+    FONTCHANGED = WM_USER + 1;
+    LANGCHANGED = WM_USER + 2;
+    FontNameSize = 256;
+
+TYPE
+    FontName = ARRAY [0..FontNameSize-1] OF CHAR;
+    FontGroup = (NilFontGroup, MainNotebook, DomainDlg);
+
+PROCEDURE EnableFontChanges (enable: BOOLEAN);
+
+    (* Enables or disables font updates.  We want to be able to ignore  *)
+    (* "new font" messages while notebooks are opening or closing.      *)
+
+PROCEDURE SetFonts;
+
+    (* Sets initial fonts from Setup.INI or Setup.TNI. *)
+
+PROCEDURE CurrentFont (group: FontGroup;  VAR (*OUT*) fontname: FontName);
+
+    (* Returns the currently set font for this group. *)
+
+PROCEDURE UpdateFontFrom (hwnd: HWND;  group: FontGroup);
+
+    (* Takes the font setting from window hwnd and propagates it to the *)
+    (* entire group.  Note that this will often be a "no operation"     *)
+    (* because the font is no different from the presently active one.  *)
+    (* The new font is also saved to Setup.INI or Setup.TNI.            *)
+
+PROCEDURE SetINIFilename (UseTNI: BOOLEAN);
+
+    (* Makes a record of the application INI file (not the Setup INI    *)
+    (* file) name, which can then be queried by other modules.          *)
+
+PROCEDURE GetINIFilename (VAR (*OUT*) name: ARRAY OF CHAR): BOOLEAN;
+
+    (* Returns the name of the INI or TNI file for this application. *)
+    (* Returns TRUE iff this is a TNI file.                          *)
+
+PROCEDURE SetInitialLanguage;
+
+    (* Sets the language from the INI or TNI file. *)
+
+PROCEDURE ChangeLanguageTo (name: ARRAY OF CHAR): BOOLEAN;
+
+    (* Changes the current language setting, but only if a suitable     *)
+    (* Setup.name.lng file exists.  Returns FALSE if no change.         *)
+
+PROCEDURE CurrentLanguage (VAR (*OUT*) lang: LangHandle;
+                                VAR (*OUT*) name: ARRAY OF CHAR);
+
+    (* Returns the current language setting. *)
+
+END CommonSettings.
+

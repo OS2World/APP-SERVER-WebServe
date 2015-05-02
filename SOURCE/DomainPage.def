@@ -1,0 +1,38 @@
+DEFINITION MODULE DomainPage;
+
+        (****************************************************************)
+        (*                                                              *)
+        (*                    PM Setup for web server                   *)
+        (*             The 'our domains' page of the notebook           *)
+        (*                                                              *)
+        (*        Started:        16 April 2015                         *)
+        (*        Last edited:    17 April 2015                         *)
+        (*        Status:         OK                                    *)
+        (*                                                              *)
+        (****************************************************************)
+
+
+FROM OS2 IMPORT            HWND;
+FROM CommonSettings IMPORT FontName;
+FROM Names IMPORT          DomainName;
+FROM Languages IMPORT      LangHandle;
+
+
+PROCEDURE StoreData;
+
+    (* Stores back the domain list if it has changed. *)
+
+PROCEDURE CreatePage (notebook: HWND;  VAR (*OUT*) ID: CARDINAL): HWND;
+
+    (* Creates the domain list page, and adds it to the notebook.  *)
+
+PROCEDURE SetLanguage (lang: LangHandle);
+
+    (* Relabels this page in the new language. *)
+
+PROCEDURE SetFont (VAR (*IN*) name: FontName);
+
+    (* Sets the font of the text on this page. *)
+
+END DomainPage.
+

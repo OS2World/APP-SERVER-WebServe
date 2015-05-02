@@ -1,0 +1,55 @@
+(**************************************************************************)
+(*                                                                        *)
+(*  Web server input stream handler                                       *)
+(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*                                                                        *)
+(*  This program is free software: you can redistribute it and/or modify  *)
+(*  it under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 3 of the License, or     *)
+(*  (at your option) any later version.                                   *)
+(*                                                                        *)
+(*  This program is distributed in the hope that it will be useful,       *)
+(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
+(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
+(*  GNU General Public License for more details.                          *)
+(*                                                                        *)
+(*  You should have received a copy of the GNU General Public License     *)
+(*  along with this program.  If not, see <http://www.gnu.org/licenses/>. *)
+(*                                                                        *)
+(*  To contact author:   http://www.pmoylan.org   peter@pmoylan.org       *)
+(*                                                                        *)
+(**************************************************************************)
+
+DEFINITION MODULE InStream;
+
+        (********************************************************)
+        (*                                                      *)
+        (*          Handler for input from a socket             *)
+        (*                                                      *)
+        (*  Programmer:         P. Moylan                       *)
+        (*  Started:            1 March 2015                    *)
+        (*  Last edited:        1 March 2015                    *)
+        (*  Status:             Just started                    *)
+        (*                                                      *)
+        (********************************************************)
+
+
+FROM Sockets IMPORT
+    (* type *)  Socket;
+
+TYPE IStream;           (* is private *)
+
+PROCEDURE OpenIStream (S: Socket): IStream;
+
+    (* Opens a new IStream object that gets incoming socket data. *)
+
+PROCEDURE CloseIStream (VAR (*INOUT*) stream: IStream);
+
+    (* Deletes the stream. *)
+
+PROCEDURE GetLine (stream: IStream;  VAR (*OUT*) line: ARRAY OF CHAR): BOOLEAN;
+
+    (* Gets one line from the specified stream.             *)
+
+END InStream.
+

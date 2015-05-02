@@ -1,0 +1,116 @@
+# Notations en franáais pour le carnet Setup de WebServe.
+# Traduction : Peter Moylan.
+
+#======================================================================
+# Dialogue d'ouverture et dialogue d'installation Ö distance
+#======================================================================
+
+Opening.title "Configuration de Webserve"
+Opening.local "Local"
+Opening.remote "∑ distance"
+Opening.setup "Configuration"
+Opening.go "Allez"
+Opening.exit "Sortie"
+Opening.status.loading "Attendez svp"
+
+Remote.title "Serveur Ö distance"
+Remote.HostLabel "Serveur"
+Remote.PortLabel "Port INIServe"
+Remote.PassLabel "Mot de passe INIServe"
+Remote.DirLabel "Archive %a"
+
+Remote.nosocket "Pas de jonction"
+Remote.lookingup "Recherche de nom"
+Remote.unknownhost "Serveur inconnu"
+Remote.trying "Tentative de connexion"
+Remote.failed "Connexion ratÇe"
+Remote.serverrejected "Refus par le serveur"
+Remote.invaliddir "Archive Ö distance non valable"
+Remote.badpassword "Mot de passe refusÇ"
+Remote.connected "Connexion Çtablie"
+
+#======================================================================
+# Messages pour le carnet principal.
+#======================================================================
+
+Main.local "Setup Webserve Local"
+Main.remote "Setup Webserve Ö distance"
+Main.cantopen "Impossible d'ouvrir fichier INI"
+
+Page1.tab "Base"
+Page1.ServerLabel "Serveur"
+Page1.Port "Port"
+Page1.Timeout "Patience (secondes)"
+Page1.MaxClients "Maximum de clients"
+Page1.Language "Langage"
+
+Domains.tab "Domaines"
+Domains.Label "NOS DOMAINES"
+Domains.explain "La liste de tous les domaines gÇrÇs par ce serveur"
+Domains.willdelete "Cette opÇration Çliminera %1 utilisateurs. Vous àtes sñr que vous voulez Çliminer ce domaine ?"
+Domains.areyousure "êliminer domaine : àtes-vous sñr ?"
+Domains.EnterName "Entrez un nom de domaine"
+Domains.NewName "Nouveau nom de domaine"
+Domains.CantDelete "êlimination incompläte du domaine '%a'. Vous devez ìter manuellement les fichiers restants."
+
+Logging.tab "Logging"
+Logging.Transfer "Logging des transferts"
+Logging.CommonLog "Journal commun"
+Logging.Transaction "Log transactions"
+Logging.DetailedLogTo "Log transaction dÇtaillÇ Ö"
+Logging.Disk "Disque"
+Logging.Screen "êcran"
+Logging.Pipe "Tuyau"
+Logging.Syslog "Syslog"
+Logging.TransLogName "Nom du fichier log"
+Logging.SyslogHost "hìte syslog"
+Logging.ExtraLogging "Logging plus dÇtaillÇ"
+
+MIME.tab "MIME"
+MIME.Label "TYPES MIME"
+MIME.explain "Format: type EXT1 EXT2 ... Toutes les extensions en majuscule"
+MIME.EnterName "Entrez une definition MIME"
+MIME.EditName "Modifier cette entrÇe"
+
+About.tab "Concernant"
+About.1 "Webserve, un serveur web lÇger"
+About.2 "Version %a"
+About.3 "DeveloppÇ par"
+About.4 "Pour d'autres logiciels pour OS/2, voir"
+
+#======================================================================
+# Domain editor
+#======================================================================
+
+DomainEd.Title "'êditeur de domaine"
+DomainEd.RootLabel "Racine HTML"
+DomainEd.CGIDirLabel "RÇpertoire CGI"
+DomainEd.HostlistLabel "Autre noms pour cette domaine"
+
+#======================================================================
+# Divers
+#======================================================================
+
+Buttons.Add "Ajouter"
+Buttons.Rename "Renommer"
+Buttons.Revise "Reviser"
+Buttons.Edit "Modifier"
+Buttons.Promote "SupÇrieur"
+Buttons.Demote "InfÇrieur"
+Buttons.Delete "Supprimer"
+Buttons.OK "OK"
+Buttons.Cancel "Annuler"
+
+Month.1 "janvier"
+Month.2 "fÇvrier"
+Month.3 "mars"
+Month.4 "avril"
+Month.5 "mai"
+Month.6 "juin"
+Month.7 "juillet"
+Month.8 "aoñt"
+Month.9 "septembre"
+Month.10 "octobre"
+Month.11 "novembre"
+Month.12 "dÇcembre"
+

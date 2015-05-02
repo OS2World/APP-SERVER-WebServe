@@ -1,0 +1,69 @@
+(**************************************************************************)
+(*                                                                        *)
+(*  Web server session manager                                            *)
+(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*                                                                        *)
+(*  This program is free software: you can redistribute it and/or modify  *)
+(*  it under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 3 of the License, or     *)
+(*  (at your option) any later version.                                   *)
+(*                                                                        *)
+(*  This program is distributed in the hope that it will be useful,       *)
+(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
+(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
+(*  GNU General Public License for more details.                          *)
+(*                                                                        *)
+(*  You should have received a copy of the GNU General Public License     *)
+(*  along with this program.  If not, see <http://www.gnu.org/licenses/>. *)
+(*                                                                        *)
+(*  To contact author:   http://www.pmoylan.org   peter@pmoylan.org       *)
+(*                                                                        *)
+(**************************************************************************)
+
+DEFINITION MODULE Requests;
+
+        (********************************************************)
+        (*                                                      *)
+        (*            Handle requests to web server             *)
+        (*                                                      *)
+        (*  Programmer:         P. Moylan                       *)
+        (*  Started:            1 March 2015                    *)
+        (*  Last edited:        29 April 2015                   *)
+        (*  Status:             OK                              *)
+        (*                                                      *)
+        (********************************************************)
+
+
+FROM Sockets IMPORT
+    (* type *)  Socket;
+
+FROM TransLog IMPORT
+    (* type *)  LogContext, TransactionLogID;
+
+
+TYPE Session;       (* is private *)
+
+
+PROCEDURE LContext(): LogContext;
+
+    (* Returns the log context used for transaction logging. *)
+
+PROCEDURE LoadReqINIData (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
+
+    (* Loads INI data needed to handle requests. *)
+
+PROCEDURE OpenSession (S: Socket;  ID: TransactionLogID): Session;
+
+    (* Creates the session state for a new session. *)
+
+PROCEDURE CloseSession (VAR (*INOUT*) sess: Session);
+
+    (* Terminates a session. *)
+
+PROCEDURE HandleOneRequest (sess: Session;
+                                VAR (*OUT*) mustclose: BOOLEAN): BOOLEAN;
+
+    (* Deals with a request to the server. *)
+
+END Requests.
+

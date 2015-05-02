@@ -1,0 +1,59 @@
+(**************************************************************************)
+(*                                                                        *)
+(*  Setup for web server                                                  *)
+(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*                                                                        *)
+(*  This program is free software: you can redistribute it and/or modify  *)
+(*  it under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 3 of the License, or     *)
+(*  (at your option) any later version.                                   *)
+(*                                                                        *)
+(*  This program is distributed in the hope that it will be useful,       *)
+(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
+(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
+(*  GNU General Public License for more details.                          *)
+(*                                                                        *)
+(*  You should have received a copy of the GNU General Public License     *)
+(*  along with this program.  If not, see <http://www.gnu.org/licenses/>. *)
+(*                                                                        *)
+(*  To contact author:   http://www.pmoylan.org   peter@pmoylan.org       *)
+(*                                                                        *)
+(**************************************************************************)
+
+DEFINITION MODULE SUMIME;
+
+        (****************************************************************)
+        (*                                                              *)
+        (*                    PM Setup for web server                   *)
+        (*             The 'MIME types' page of the notebook            *)
+        (*                                                              *)
+        (*        Started:        8 April 2015                          *)
+        (*        Last edited:    8 April 2015                          *)
+        (*        Status:         OK                                    *)
+        (*                                                              *)
+        (****************************************************************)
+
+
+FROM OS2            IMPORT HWND;
+FROM Languages      IMPORT LangHandle;
+FROM CommonSettings IMPORT FontName;
+
+PROCEDURE SetLanguage (lang: LangHandle);
+
+    (* Relabels this page in the new language. *)
+
+PROCEDURE StoreData;
+
+    (* Stores back the MIME list if it has changed. *)
+
+PROCEDURE CreatePage (notebook: HWND;
+                        VAR (*OUT*) ID: CARDINAL): HWND;
+
+    (* Creates the domain list page, and adds it to the notebook.  *)
+
+PROCEDURE SetFont (VAR (*IN*) name: FontName);
+
+    (* Sets the font of the text on this page. *)
+
+END SUMIME.
+

@@ -1,0 +1,1037 @@
+
+------ file D:\pmos2\src\Conversions.mod
+_TEXT   10000 Conversions_atoi
+_TEXT   10050 Conversions_StringToHex
+_TEXT   101A0 Conversions_StringToCardinal
+_TEXT   101F0 Conversions_StringToLongCard
+_TEXT   102E0 Conversions_StringToCard64
+_TEXT   103F0 Conversions_StringToReal
+_TEXT   10480 Conversions_StringToLongReal
+_TEXT   106C0 Conversions_HexToChar
+_TEXT   10710 Conversions_HexByteToString
+_TEXT   10780 Conversions_HexToString
+_TEXT   107F0 Conversions_LongHexToString
+_TEXT   10850 Conversions_ShortCardToString
+_TEXT   10870 Conversions_CardinalToString
+_TEXT   10890 Conversions_LongCardToString
+_TEXT   10970 Conversions_Card64ToString
+_TEXT   10A60 Conversions_RealToString
+_TEXT   10A90 Conversions_LongRealToString
+_TEXT   10C20 Conversions_CardinalToStringLJ
+_TEXT   10C70 Conversions_Card64ToStringLJ
+_TEXT   10CD0 Conversions_RealToF
+_TEXT   10D00 Conversions_LongRealToF
+_TEXT   11570 Conversions_BEGIN
+
+------ file D:\Dev1\WebServe\src\Domains.mod
+_TEXT   115A0 Domains_UpdateDomainList
+_TEXT   11600 Domains_OpenDomain
+_TEXT   11690 Domains_CloseDomain
+_TEXT   116A0 Domains_LocateFile
+_TEXT   11E60 Domains_BEGIN
+
+------ file D:\pmos2\src\Exceptq.mod
+_TEXT   11ED0 Exceptq_EqSetInfo
+_TEXT   11F80 Exceptq_InstallExceptq
+_TEXT   11FC0 Exceptq_UninstallExceptq
+_TEXT   12170 Exceptq_BEGIN
+
+------ file D:\Dev1\WebServe\src\ExecCGI.mod
+_TEXT   121C0 ExecCGI_ExecProgram
+_TEXT   125B0 ExecCGI_BEGIN
+
+------ file D:\pmos2\src\FileOps.mod
+_TEXT   125E0 FileOps_FreeSpace
+_TEXT   12680 FileOps_GetCurrentDirectory
+_TEXT   126E0 FileOps_GetEXEDirectory
+_TEXT   12770 FileOps_OpenOldFile
+_TEXT   12860 FileOps_OpenNewFile
+_TEXT   12940 FileOps_OpenNewFile1
+_TEXT   129A0 FileOps_OpenNewHiddenFile
+_TEXT   12A00 FileOps_OpenAtEnd
+_TEXT   12AC0 FileOps_CloseFile
+_TEXT   12AE0 FileOps_Flush
+_TEXT   12B00 FileOps_HideFile
+_TEXT   12B70 FileOps_Exists
+_TEXT   12C00 FileOps_DeleteFile
+_TEXT   12C60 FileOps_CreateFile
+_TEXT   12CD0 FileOps_MoveFile
+_TEXT   12D60 FileOps_CopyFile
+_TEXT   12E00 FileOps_AppendFile
+_TEXT   12EA0 FileOps_CurrentPosition
+_TEXT   12F10 FileOps_StartPosition
+_TEXT   12F30 FileOps_EndPosition
+_TEXT   13010 FileOps_SetPosition
+_TEXT   13070 FileOps_GetFileSize
+_TEXT   13130 FileOps_SetFileSize
+_TEXT   13190 FileOps_ReadRaw
+_TEXT   131B0 FileOps_ReadLine
+_TEXT   13250 FileOps_WriteRaw
+_TEXT   13280 FileOps_WriteRawV
+_TEXT   132E0 FileOps_FWriteChar
+_TEXT   13300 FileOps_FWriteString
+_TEXT   13370 FileOps_FWriteLn
+_TEXT   13390 FileOps_FWriteHexByte
+_TEXT   133C0 FileOps_FWriteCard
+_TEXT   13400 FileOps_FWriteCard64
+_TEXT   13440 FileOps_FWriteZCard
+_TEXT   134A0 FileOps_FWriteLJCard
+_TEXT   134D0 FileOps_FWriteLJCard64
+_TEXT   13510 FileOps_FirstDirEntry
+_TEXT   135C0 FileOps_NextDirEntry
+_TEXT   135F0 FileOps_DirSearchDone
+_TEXT   13610 FileOps_GetProgName
+_TEXT   13FA0 FileOps_BEGIN
+
+------ file D:\dev1\general\src\Heap.mod
+_TEXT   13FF0 Heap_ALLOCATE
+_TEXT   14040 Heap_DEALLOCATE
+_TEXT   14080 Heap_StartTracking
+_TEXT   14140 Heap_TrackUpdate
+_TEXT   141A0 Heap_BEGIN
+
+------ file D:\dev1\general\src\INIData.mod
+_TEXT   14220 INIData_OpenINIFile
+_TEXT   14320 INIData_CreateINIFile
+_TEXT   14420 INIData_INIValid
+_TEXT   14430 INIData_CloseINIFile
+_TEXT   14470 INIData_ItemSize
+_TEXT   14540 INIData_INIGetTrusted
+_TEXT   14610 INIData_INIGet
+_TEXT   14740 INIData_INIGetString
+_TEXT   14840 INIData_INIPut
+_TEXT   148F0 INIData_INIPutBinary
+_TEXT   149C0 INIData_INIPutString
+_TEXT   14A40 INIData_GetStringList
+_TEXT   14B50 INIData_NextString
+_TEXT   14C00 INIData_CloseStringList
+_TEXT   14C30 INIData_INIDeleteApp
+_TEXT   14C70 INIData_INIRenameApp
+_TEXT   14CC0 INIData_INIDeleteKey
+_TEXT   14D50 INIData_OurDirectory
+_TEXT   14D70 INIData_SetInitialWindowPosition
+_TEXT   14F40 INIData_SetInitialWindowSize
+_TEXT   15070 INIData_SetFont
+_TEXT   151C0 INIData_StoreWindowPosition
+_TEXT   15370 INIData_StoreWindowSize
+_TEXT   154A0 INIData_StoreFont
+_TEXT   155F0 INIData_GetProgramDirectory
+_TEXT   15610 INIData_SetWorkingDirectory
+_TEXT   15AC0 INIData_BEGIN
+
+------ file D:\Dev1\WebServe\src\InStream.mod
+_TEXT   15B10 InStream_OpenIStream
+_TEXT   15B40 InStream_CloseIStream
+_TEXT   15BA0 InStream_GetLine
+_TEXT   15C80 InStream_BEGIN
+
+------ file D:\dev1\general\src\Inet2Misc.mod
+_TEXT   15CA0 Inet2Misc_EVAL
+_TEXT   15CF0 Inet2Misc_StringMatch
+_TEXT   15DA0 Inet2Misc_ToLower
+_TEXT   15E10 Inet2Misc_SplitArg
+_TEXT   15F90 Inet2Misc_NameIsNumeric
+_TEXT   16040 Inet2Misc_IPToString
+_TEXT   16150 Inet2Misc_AddressToHostName
+_TEXT   161C0 Inet2Misc_WaitForSocket
+_TEXT   161F0 Inet2Misc_WaitForSocketOut
+_TEXT   16220 Inet2Misc_Synch
+_TEXT   162F0 Inet2Misc_StringToIP
+_TEXT   163C0 Inet2Misc_Swap2
+_TEXT   163E0 Inet2Misc_Swap4
+_TEXT   16400 Inet2Misc_ConvertCard
+_TEXT   16490 Inet2Misc_HexEncodeArray
+_TEXT   16560 Inet2Misc_DecodeHex
+_TEXT   16620 Inet2Misc_DecodeHexString
+_TEXT   16730 Inet2Misc_AddEOL
+_TEXT   167A0 Inet2Misc_LockScreen
+_TEXT   167B0 Inet2Misc_UnlockScreen
+_TEXT   169C0 Inet2Misc_BEGIN
+
+------ file D:\dev1\inet\src\InetUtilities.mod
+_TEXT   16A00 InetUtilities_Swap2
+_TEXT   16A20 InetUtilities_Swap4
+_TEXT   16A40 InetUtilities_ToLower
+_TEXT   16AB0 InetUtilities_AppendString
+_TEXT   16B60 InetUtilities_ConvertCard
+_TEXT   16BF0 InetUtilities_ConvertCard64
+_TEXT   16C90 InetUtilities_ConvertCardRJ
+_TEXT   16D20 InetUtilities_ConvertCard64RJ
+_TEXT   16DC0 InetUtilities_ConvertCardZ
+_TEXT   16E70 InetUtilities_AppendCard
+_TEXT   16EC0 InetUtilities_ConvertDecimal
+_TEXT   16F40 InetUtilities_ConvertDecimal64
+_TEXT   17010 InetUtilities_AddEOL
+_TEXT   17080 InetUtilities_CurrentTimeToString
+_TEXT   17180 InetUtilities_NameIsNumeric
+_TEXT   17230 InetUtilities_IPToString
+_TEXT   17340 InetUtilities_LockScreen
+_TEXT   17350 InetUtilities_UnlockScreen
+_TEXT   17360 InetUtilities_WriteCard
+_TEXT   173B0 InetUtilities_GetLastError
+_TEXT   173D0 InetUtilities_Synch
+_TEXT   173E0 InetUtilities_WaitForSocket
+_TEXT   17410 InetUtilities_WaitForDataSocket
+_TEXT   17470 InetUtilities_OpenLogFile
+_TEXT   174D0 InetUtilities_CloseLogFile
+_TEXT   17760 InetUtilities_BEGIN
+
+------ file D:\pmos2\src\LONGLONG.mod
+_TEXT   177E0 LONGLONG_Compare64
+_TEXT   17850 LONGLONG_Add64
+_TEXT   178A0 LONGLONG_Sub64
+_TEXT   178F0 LONGLONG_ShortSub
+_TEXT   17940 LONGLONG_Sum64
+_TEXT   179E0 LONGLONG_Diff64
+_TEXT   17AF0 LONGLONG_Mul64
+_TEXT   17D70 LONGLONG_ShortMul64
+_TEXT   17DC0 LONGLONG_LongDiv64
+_TEXT   17ED0 LONGLONG_ShortDiv
+_TEXT   17F10 LONGLONG_Div10
+_TEXT   17F40 LONGLONG_FLOAT64
+_TEXT   17F80 LONGLONG_ORDL
+_TEXT   18030 LONGLONG_BEGIN
+
+------ file D:\pmos2\src\LowLevel.mod
+_TEXT   18050 LowLevel_EVAL
+_TEXT   180A0 LowLevel_Assert
+_TEXT   18100 LowLevel_ALLOCATE64
+_TEXT   18190 LowLevel_IAND
+_TEXT   181A0 LowLevel_IANDB
+_TEXT   181C0 LowLevel_IOR
+_TEXT   181D0 LowLevel_IORB
+_TEXT   181F0 LowLevel_IXOR
+_TEXT   18200 LowLevel_IXORB
+_TEXT   18220 LowLevel_INOT
+_TEXT   18240 LowLevel_INOTB
+_TEXT   18270 LowLevel_ROL
+_TEXT   18290 LowLevel_ROLB
+_TEXT   182B0 LowLevel_LS
+_TEXT   182E0 LowLevel_LSB
+_TEXT   18310 LowLevel_ROR
+_TEXT   18340 LowLevel_RORB
+_TEXT   18370 LowLevel_RS
+_TEXT   183B0 LowLevel_RSB
+_TEXT   183F0 LowLevel_Far
+_TEXT   18400 LowLevel_MakePointer
+_TEXT   18420 LowLevel_SEGMENT
+_TEXT   18430 LowLevel_FarSEGMENT
+_TEXT   18440 LowLevel_OFFSET
+_TEXT   18460 LowLevel_AddOffset
+_TEXT   18470 LowLevel_SubtractOffset
+_TEXT   18480 LowLevel_FarAddOffset
+_TEXT   18490 LowLevel_FarSubtractOffset
+_TEXT   184A0 LowLevel_LowByte
+_TEXT   184C0 LowLevel_HighByte
+_TEXT   184E0 LowLevel_MakeWord
+_TEXT   18500 LowLevel_SignExtend
+_TEXT   18510 LowLevel_LowWord
+_TEXT   18530 LowLevel_HighWord
+_TEXT   18550 LowLevel_MakeLongword
+_TEXT   18570 LowLevel_INCV
+_TEXT   185C0 LowLevel_INCVB
+_TEXT   18600 LowLevel_DECV
+_TEXT   18640 LowLevel_DECVB
+_TEXT   18690 LowLevel_Mul
+_TEXT   186B0 LowLevel_MulB
+_TEXT   186D0 LowLevel_IMul
+_TEXT   186F0 LowLevel_IMulB
+_TEXT   18730 LowLevel_DivB
+_TEXT   18750 LowLevel_Div
+_TEXT   18780 LowLevel_Copy
+_TEXT   187B0 LowLevel_FarCopy
+_TEXT   187E0 LowLevel_CopyUp
+_TEXT   18840 LowLevel_BlockFill
+_TEXT   18860 LowLevel_BlockFillWord
+_TEXT   188A0 LowLevel_BEGIN
+
+------ file D:\Dev1\WebServe\src\MIMEtypes.mod
+_TEXT   188C0 MIMEtypes_LoadMIMETable
+_TEXT   189C0 MIMEtypes_IdentifyType
+_TEXT   18D00 MIMEtypes_BEGIN
+
+------ file D:\dev1\general\src\MyClock.mod
+_TEXT   18D30 MyClock_CorrectToGMT
+_TEXT   18E40 MyClock_StringToPackedDateTime
+_TEXT   190D0 MyClock_PackedDateTimeToString
+_TEXT   19300 MyClock_PackedDateTimeToGMT
+_TEXT   19350 MyClock_OurTimezone
+_TEXT   19430 MyClock_FormatCurrentDateTime
+_TEXT   194A0 MyClock_CurrentDateAndTime
+_TEXT   194D0 MyClock_CurrentDateAndTimeGMT
+_TEXT   19500 MyClock_CompareDateStrings
+_TEXT   19560 MyClock_PackedCurrentDateTime
+_TEXT   19610 MyClock_CurrentTimeToString
+_TEXT   19640 MyClock_AppendDateString
+_TEXT   19670 MyClock_AppendDateTimeString
+_TEXT   196A0 MyClock_AppendTimeString
+_TEXT   19780 MyClock_AppendSyslogDateTimeString
+_TEXT   1AE70 MyClock_BEGIN
+
+------ file D:\dev1\general\src\Names.mod
+_TEXT   1AEA0 Names_BEGIN
+
+------ file D:\Dev1\WebServe\src\ProgName.mod
+_TEXT   1AEC0 ProgName_GetProgramName
+_TEXT   1AF10 ProgName_BEGIN
+
+------ file D:\pmos2\src\Queues.mod
+_TEXT   1AF40 Queues_CreateQueue
+_TEXT   1AF80 Queues_DestroyQueue
+_TEXT   1AFE0 Queues_AddToQueue
+_TEXT   1B040 Queues_TakeFromQueue
+_TEXT   1B090 Queues_TakeFromQueueTimed
+_TEXT   1B100 Queues_Empty
+_TEXT   1B130 Queues_BEGIN
+
+------ file D:\Dev1\WebServe\src\Requests.mod
+_TEXT   1B160 Requests_LContext
+_TEXT   1B170 Requests_LoadReqINIData
+_TEXT   1B1E0 Requests_OpenSession
+_TEXT   1B280 Requests_CloseSession
+_TEXT   1B2B0 Requests_HandleOneRequest
+_TEXT   1CBC0 Requests_BEGIN
+
+------ file D:\pmos2\src\Semaphores.mod
+_TEXT   1CC90 Semaphores_CreateSemaphore
+_TEXT   1CCE0 Semaphores_DestroySemaphore
+_TEXT   1CD10 Semaphores_Wait
+_TEXT   1CDC0 Semaphores_TimedWaitInternal
+_TEXT   1CF00 Semaphores_Signal
+_TEXT   1CF90 Semaphores_BEGIN
+
+------ file D:\pmos2\src\SplitScreen.mod
+_TEXT   1CFB0 SplitScreen_NotDetached
+_TEXT   1CFC0 SplitScreen_LockScreen
+_TEXT   1CFE0 SplitScreen_UnlockScreen
+_TEXT   1D000 SplitScreen_SetBoundary
+_TEXT   1D030 SplitScreen_ClearScreen
+_TEXT   1D080 SplitScreen_ReleaseScreen
+_TEXT   1D0C0 SplitScreen_RegainScreen
+_TEXT   1D110 SplitScreen_WriteChar
+_TEXT   1D130 SplitScreen_WriteString
+_TEXT   1D290 SplitScreen_WriteLn
+_TEXT   1D330 SplitScreen_SetCursor
+_TEXT   1D380 SplitScreen_WriteInt
+_TEXT   1D3B0 SplitScreen_WriteCard
+_TEXT   1D400 SplitScreen_WriteStringAt
+_TEXT   1D5F0 SplitScreen_BEGIN
+
+------ file D:\dev1\general\src\TNIData.mod
+_TEXT   1D660 TNIData_OpenTNIFile
+_TEXT   1D7A0 TNIData_CreateTNIFile
+_TEXT   1D860 TNIData_CloseTNIFile
+_TEXT   1D920 TNIData_ItemSize
+_TEXT   1D970 TNIData_INIGetTrusted
+_TEXT   1DA20 TNIData_INIGetString
+_TEXT   1DAF0 TNIData_INIPutBinary
+_TEXT   1DB90 TNIData_INIDeleteApp
+_TEXT   1DC20 TNIData_INIDeleteKey
+_TEXT   206F0 TNIData_BEGIN
+
+------ file D:\pmos2\src\TaskControl.mod
+_TEXT   20770 TaskControl_CreateTask
+_TEXT   207B0 TaskControl_CreateTask1
+_TEXT   207F0 TaskControl_TaskExit
+_TEXT   208E0 TaskControl_ThreadCount
+_TEXT   208F0 TaskControl_Crash
+_TEXT   20950 TaskControl_CreateLock
+_TEXT   20980 TaskControl_DestroyLock
+_TEXT   209B0 TaskControl_Obtain
+_TEXT   209E0 TaskControl_Release
+_TEXT   20A00 TaskControl_CurrentTaskID
+_TEXT   20A30 TaskControl_SuspendMe
+_TEXT   20A90 TaskControl_ResumeTask
+_TEXT   20FF0 TaskControl_BEGIN
+
+------ file D:\pmos2\src\Timer.mod
+_TEXT   21070 Timer_Sleep
+_TEXT   21090 Timer_TimedWait
+_TEXT   210B0 Timer_TimedWaitSpecial
+_TEXT   210D0 Timer_BEGIN
+
+------ file D:\dev1\general\src\TransLog.mod
+_TEXT   210F0 TransLog_SetProcname
+_TEXT   21190 TransLog_SetSyslogHost
+_TEXT   21230 TransLog_UpdateTopScreenLine
+_TEXT   212D0 TransLog_OpenLogContext
+_TEXT   21320 TransLog_CloseLogContext
+_TEXT   21350 TransLog_StartTransactionLogging
+_TEXT   214C0 TransLog_GetLogPrefix
+_TEXT   214F0 TransLog_DummyLogID
+_TEXT   21500 TransLog_CreateLogID
+_TEXT   21590 TransLog_DiscardLogID
+_TEXT   215B0 TransLog_LogTransaction
+_TEXT   21650 TransLog_LogTransactionL
+_TEXT   225C0 TransLog_BEGIN
+
+------ file D:\pmos2\src\Types.mod
+_TEXT   22720 Types_BEGIN
+
+------ file D:\Dev1\WebServe\src\WSV.mod
+_TEXT   22740 WSV_BEGIN
+
+------ file D:\Dev1\WebServe\SRC\wsession.mod
+_TEXT   22760 WSession_NewSession
+_TEXT   227E0 WSession_SetSessionParameters
+_TEXT   22850 WSession_NumberOfClients
+_TEXT   22E80 WSession_BEGIN
+
+------ file D:\Dev1\WebServe\SRC\webserve.mod
+_TEXT   23980 main
+
+------ file D:\pmos2\src\WildCard.mod
+_TEXT   23AE0 WildCard_WildMatch
+_TEXT   23CF0 WildCard_WildMatchS
+_TEXT   24290 WildCard_BEGIN
+
+------ file .\xstart.asm (library D:\XDS\lib\x86\xstart.lib)
+_TEXT   242B0 xStart
+_TEXT   242CC X2C_FINALLY
+_TEXT   242D1 X2C_INIT_HISTORY
+_TEXT   242EB X2C_MODULE
+_TEXT   24300 X2C_GetMyHandle
+
+------ file E:\XDSOS2\src\syslib\COROUTIN.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   24310 COROUTINES_ATTACH
+_TEXT   24340 COROUTINES_CURRENT
+_TEXT   24350 COROUTINES_DETACH
+_TEXT   243A0 COROUTINES_HANDLER
+_TEXT   243B0 COROUTINES_IOTRANSFER
+_TEXT   243D0 COROUTINES_IsATTACHED
+_TEXT   243F0 COROUTINES_LISTEN
+_TEXT   24410 COROUTINES_NEWCOROUTINE
+_TEXT   24440 COROUTINES_PROT
+_TEXT   24450 COROUTINES_TRANSFER
+_TEXT   24470 COROUTINES_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\ChanCons.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   244C0 ChanConsts_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\CharClas.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   244E0 CharClass_IsControl
+_TEXT   24500 CharClass_IsLetter
+_TEXT   24520 CharClass_IsLower
+_TEXT   24540 CharClass_IsNumeric
+_TEXT   24560 CharClass_IsUpper
+_TEXT   24580 CharClass_IsWhiteSpace
+_TEXT   245A0 CharClass_BEGIN
+
+------ file E:\XDSOS2\src\ulib\CtrlC.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   245C0 CtrlC_IsCtrlCException
+_TEXT   245F0 CtrlC_SetBreakHandler
+_TEXT   24600 CtrlC_BEGIN
+
+------ file E:\XDSOS2\src\syslib\EXCEPTIO.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   24630 EXCEPTIONS_AllocateSource
+_TEXT   24690 EXCEPTIONS_CurrentNumber
+_TEXT   24700 EXCEPTIONS_GetMessage
+_TEXT   24750 EXCEPTIONS_IsCurrentSource
+_TEXT   24780 EXCEPTIONS_IsExceptionalExecution
+_TEXT   247A0 EXCEPTIONS_RAISE
+_TEXT   24810 EXCEPTIONS_BEGIN
+
+------ file E:\XDSOS2\src\ulib\FileSys.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   24830 FileSys_CloseDir
+_TEXT   24860 FileSys_CreateDirectory
+_TEXT   24880 FileSys_Exists
+_TEXT   248A0 FileSys_FullName
+_TEXT   24910 FileSys_GetCDName
+_TEXT   24930 FileSys_GetCDNameLength
+_TEXT   24940 FileSys_GetName
+_TEXT   24960 FileSys_ModifyTime
+_TEXT   24990 FileSys_NextDirEntry
+_TEXT   249D0 FileSys_OpenDir
+_TEXT   24A80 FileSys_Remove
+_TEXT   24AB0 FileSys_RemoveDirectory
+_TEXT   24AD0 FileSys_Rename
+_TEXT   24B20 FileSys_SetCD
+_TEXT   24D80 FileSys_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\IOChan.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   24DB0 IOChan_ChanException
+_TEXT   24DC0 IOChan_CurrentFlags
+_TEXT   24DD0 IOChan_DeviceError
+_TEXT   24DE0 IOChan_Flush
+_TEXT   24DF0 IOChan_GetName
+_TEXT   24E10 IOChan_InvalidChan
+_TEXT   24E20 IOChan_IsChanException
+_TEXT   24E30 IOChan_Look
+_TEXT   24E50 IOChan_RawRead
+_TEXT   24E70 IOChan_RawWrite
+_TEXT   24E90 IOChan_ReadResult
+_TEXT   24EA0 IOChan_Reset
+_TEXT   24EB0 IOChan_SetReadResult
+_TEXT   24EC0 IOChan_Skip
+_TEXT   24ED0 IOChan_SkipLook
+_TEXT   24EF0 IOChan_TextRead
+_TEXT   24F10 IOChan_TextWrite
+_TEXT   24F30 IOChan_WriteLn
+_TEXT   24F40 IOChan_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\IOConsts.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   24FA0 IOConsts_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\IOLink.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   24FC0 IOLink_AllocateDeviceId
+_TEXT   24FD0 IOLink_DeviceTablePtrValue
+_TEXT   25040 IOLink_IOException
+_TEXT   25070 IOLink_IsDevice
+_TEXT   25090 IOLink_IsIOException
+_TEXT   250A0 IOLink_MakeChan
+_TEXT   250F0 IOLink_RAISEdevException
+_TEXT   25170 IOLink_UnMakeChan
+_TEXT   25390 IOLink_BEGIN
+
+------ file E:\XDSOS2\src\syslib\M2EXCEPT.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   25480 M2EXCEPTION_IsM2Exception
+_TEXT   254B0 M2EXCEPTION_M2Exception
+_TEXT   25520 M2EXCEPTION_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\Processe.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   25550 Processes_Activate
+_TEXT   25580 Processes_Attach
+_TEXT   255B0 Processes_Create
+_TEXT   25720 Processes_Detach
+_TEXT   25790 Processes_Handler
+_TEXT   25800 Processes_IsAttached
+_TEXT   25850 Processes_IsProcessesException
+_TEXT   25860 Processes_Me
+_TEXT   25890 Processes_MyParam
+_TEXT   258A0 Processes_ProcessesException
+_TEXT   258B0 Processes_Start
+_TEXT   258E0 Processes_StopMe
+_TEXT   25940 Processes_SuspendMe
+_TEXT   25970 Processes_SuspendMeAndActivate
+_TEXT   25990 Processes_Switch
+_TEXT   259C0 Processes_UrgencyOf
+_TEXT   259D0 Processes_Wait
+_TEXT   25CB0 Processes_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\ProgramA.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   25CE0 ProgramArgs_ArgChan
+_TEXT   25D00 ProgramArgs_IsArgPresent
+_TEXT   25DA0 ProgramArgs_NextArg
+_TEXT   260F0 ProgramArgs_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\STextIO.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   26160 STextIO_ReadChar
+_TEXT   26180 STextIO_ReadRestLine
+_TEXT   261A0 STextIO_ReadString
+_TEXT   261C0 STextIO_ReadToken
+_TEXT   261E0 STextIO_SkipLine
+_TEXT   261F0 STextIO_WriteChar
+_TEXT   26210 STextIO_WriteLn
+_TEXT   26220 STextIO_WriteString
+_TEXT   26240 STextIO_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\StdChans.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   26260 StdChans_ErrChan
+_TEXT   26270 StdChans_InChan
+_TEXT   26280 StdChans_NullChan
+_TEXT   26290 StdChans_OutChan
+_TEXT   262A0 StdChans_SetErrChan
+_TEXT   262C0 StdChans_SetInChan
+_TEXT   262E0 StdChans_SetOutChan
+_TEXT   26300 StdChans_StdErrChan
+_TEXT   26310 StdChans_StdInChan
+_TEXT   26320 StdChans_StdOutChan
+_TEXT   26540 StdChans_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\Storage.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   265C0 Storage_ALLOCATE
+_TEXT   265E0 Storage_DEALLOCATE
+_TEXT   26610 Storage_IsStorageException
+_TEXT   26620 Storage_StorageException
+_TEXT   26630 Storage_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\Strings.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   26650 Strings_Append
+_TEXT   26700 Strings_Assign
+_TEXT   26790 Strings_CanAppendAll
+_TEXT   267B0 Strings_CanAssignAll
+_TEXT   267C0 Strings_CanConcatAll
+_TEXT   267E0 Strings_CanDeleteAll
+_TEXT   26800 Strings_CanExtractAll
+_TEXT   26820 Strings_CanInsertAll
+_TEXT   26850 Strings_CanReplaceAll
+_TEXT   26880 Strings_Capitalize
+_TEXT   268C0 Strings_Compare
+_TEXT   268E0 Strings_Concat
+_TEXT   26990 Strings_Delete
+_TEXT   269E0 Strings_Equal
+_TEXT   26A10 Strings_Extract
+_TEXT   26AD0 Strings_FindDiff
+_TEXT   26B30 Strings_FindNext
+_TEXT   26BD0 Strings_FindPrev
+_TEXT   26C70 Strings_Insert
+_TEXT   26D70 Strings_Length
+_TEXT   26D90 Strings_Replace
+_TEXT   26E30 Strings_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\SysClock.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   26E50 SysClock_CanGetClock
+_TEXT   26E60 SysClock_CanSetClock
+_TEXT   26E70 SysClock_GetClock
+_TEXT   27000 SysClock_IsValidDateTime
+_TEXT   27090 SysClock_SetClock
+_TEXT   27130 SysClock_BEGIN
+
+------ file E:\XDSOS2\src\syslib\TERMINAT.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   27150 TERMINATION_HasHalted
+_TEXT   27160 TERMINATION_IsTerminating
+_TEXT   27170 X2C_HALT
+_TEXT   27190 X2C_ABORT
+_TEXT   27240 X2C_FINALEXE
+_TEXT   27270 X2C_FINALDLL
+_TEXT   272A0 X2C_EXIT
+_TEXT   272F0 X2C_EXITDLL
+_TEXT   27320 X2C_ini_termination
+_TEXT   27340 TERMINATION_BEGIN
+
+------ file E:\XDSOS2\src\isoimp\TextIO.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   27360 TextIO_ReadChar
+_TEXT   27380 TextIO_ReadRestLine
+_TEXT   273F0 TextIO_ReadString
+_TEXT   27420 TextIO_ReadToken
+_TEXT   27550 TextIO_SkipLine
+_TEXT   27580 TextIO_WriteChar
+_TEXT   275A0 TextIO_WriteLn
+_TEXT   275B0 TextIO_WriteString
+_TEXT   275E0 TextIO_BEGIN
+
+------ file E:\XDSOS2\src\ulib\TimeConv.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   27600 TimeConv_AddDateDays
+_TEXT   276A0 TimeConv_AddDateSecs
+_TEXT   27780 TimeConv_Compare
+_TEXT   27810 TimeConv_SubDateDays
+_TEXT   27880 TimeConv_SubDateSecs
+_TEXT   278F0 TimeConv_TheDayNumber
+_TEXT   27940 TimeConv_TheFractionNumber
+_TEXT   279A0 TimeConv_WeekDay
+_TEXT   279D0 TimeConv_millisecs
+_TEXT   27A30 TimeConv_pack
+_TEXT   27AA0 TimeConv_time
+_TEXT   27AD0 TimeConv_unpack
+_TEXT   27AF0 TimeConv_weekday
+_TEXT   27FB0 TimeConv_BEGIN
+
+------ file src\xr\x86\X2C.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   28090 X2J_double2long
+_TEXT   280A3 X2C_TRUNCI64
+_TEXT   2818B _X2C_assign_acav
+_TEXT   2818B X2C_assign_acav
+_TEXT   2819E X2C_wasNLibInit
+_TEXT   281A4 X2C_makeNLibInit
+_TEXT   281AF X2C_wasXEntry
+_TEXT   281B5 X2C_makeXEntry
+
+------ file src\xr\x86\fppclr.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   281C0 X2C_ClearFPP
+_TEXT   28204 X2C_InitFPP
+
+------ file src\xr\x86\iscall.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   28220 X2C_IS_CALL
+_TEXT   28220 _X2C_IS_CALL
+
+------ file E:\XDSOS2\src\ulib\platform.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   282C0 platform_IsPathDelim
+_TEXT   282E0 platform_BEGIN
+
+------ file src\xr\x86\rttraps.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   28300 X2C_TRAP_RANGE
+_TEXT   28309 X2C_TRAP_OVERFL
+_TEXT   28312 X2C_TRAP_NIL
+_TEXT   2831B X2C_TRAP_DIV
+_TEXT   28324 X2C_TRAP_INDEX
+_TEXT   2832D X2C_TRAP_BREAK
+_TEXT   28338 X2C_TrapFJump
+
+------ file src\os\os2\sel2flat.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   28344 X2C_SEL2FLAT
+
+------ file src\xr\x86\setjmp.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   28350 X2C_setjmp
+_TEXT   28350 _X2C_setjmp
+_TEXT   28350 setjmp
+_TEXT   28350 _setjmp
+_TEXT   28391 longjmp
+_TEXT   28391 _longjmp
+
+------ file E:\XDSOS2\src\lib\xDevData.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   283F0 xDevData_Close
+_TEXT   28460 xDevData_CurrentPos
+_TEXT   284E0 xDevData_ForbidAll
+_TEXT   28520 xDevData_GetDID
+_TEXT   28530 xDevData_GetDevData
+_TEXT   28540 xDevData_HardError
+_TEXT   28580 xDevData_Length
+_TEXT   28640 xDevData_MakeName
+_TEXT   286B0 xDevData_Open
+_TEXT   28910 xDevData_SetMode
+_TEXT   28970 xDevData_SetPos
+_TEXT   28AF0 xDevData_SoftError
+_TEXT   28B30 xDevData_UnMakeName
+_TEXT   29950 xDevData_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosCodeS.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   299B0 xosCodeSeg_calcCodeExtent
+_TEXT   29A80 xosCodeSeg_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosDirs.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   29AA0 X2C_CreateDirectory
+_TEXT   29AD0 X2C_DirClose
+_TEXT   29B20 X2C_DirGetName
+_TEXT   29B90 X2C_DirNext
+_TEXT   29BF0 X2C_DirOpen
+_TEXT   29CD0 X2C_GetCDName
+_TEXT   29D90 X2C_GetCDNameLength
+_TEXT   29DC0 X2C_RemoveDirectory
+_TEXT   29DE0 X2C_SetCD
+_TEXT   29F10 xosDirs_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosExit.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   29F30 X2C_atexit
+_TEXT   29F60 X2C_doexit
+_TEXT   29FA0 xosExit_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosFS.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   29FC0 X2C_Exists
+_TEXT   29FF0 X2C_FullName
+_TEXT   2A0A0 X2C_ModifyTime
+_TEXT   2A140 X2C_Remove
+_TEXT   2A150 X2C_Rename
+_TEXT   2A170 xosFS_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosFileI.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2A190 X2C_FileClose
+_TEXT   2A1A0 X2C_FileOpenRead
+_TEXT   2A1E0 X2C_FileOpenWrite
+_TEXT   2A220 X2C_FileRead
+_TEXT   2A240 X2C_FileSeek
+_TEXT   2A270 X2C_FileWrite
+_TEXT   2A2A0 X2C_StdOut
+_TEXT   2A2C0 xosFileIO_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosFiles.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2A2E0 X2C_GetModuleName
+_TEXT   2A300 X2C_IsMixAllowed
+_TEXT   2A310 X2C_fChSize
+_TEXT   2A350 X2C_fClose
+_TEXT   2A360 X2C_fFlush
+_TEXT   2A370 X2C_fGetFileType
+_TEXT   2A3C0 X2C_fGetStd
+_TEXT   2A3F0 X2C_fGetXAttrs
+_TEXT   2A420 X2C_fOpen
+_TEXT   2A4D0 X2C_fRead
+_TEXT   2A4F0 X2C_fSeek
+_TEXT   2A570 X2C_fSetStd
+_TEXT   2A580 X2C_fSetXAttrs
+_TEXT   2A5A0 X2C_fSize
+_TEXT   2A620 X2C_fTell
+_TEXT   2A660 X2C_fWrite
+_TEXT   2A6D0 xosFiles_BEGIN
+
+------ file E:\XDSOS2\src\os\xosFmtIO.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2A6F0 X2C_DecToStr
+_TEXT   2A770 X2C_HexToStr
+_TEXT   2A7B0 X2C_StdOutD
+_TEXT   2A830 X2C_StdOutH
+_TEXT   2A8A0 X2C_StdOutS
+_TEXT   2A920 xosFmtIO_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosFmtNL.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2A940 X2C_StdOutN
+_TEXT   2A950 xosFmtNL_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosIpts.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2A970 X2C_DisableIpts
+_TEXT   2A980 X2C_EnableIpts
+_TEXT   2A990 X2C_RestoreIptHandler
+_TEXT   2A9A0 X2C_SaveIptHandler
+_TEXT   2A9B0 X2C_SetIptHandler
+_TEXT   2A9C0 xosIpts_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosMallo.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2A9E0 X2C_InitHeap
+_TEXT   2AA60 X2C_ZeroMem
+_TEXT   2AA80 X2C_free
+_TEXT   2AAA0 X2C_gfree
+_TEXT   2AAB0 X2C_gmalloc
+_TEXT   2AAD0 X2C_malloc
+_TEXT   2AB00 xosMalloc_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosMem.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2AB20 X2C_AllocMem
+_TEXT   2AB70 X2C_InitMem
+_TEXT   2ABC0 xosMem_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosThrea.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2ABE0 X2C_AcquireBoolSemaphore
+_TEXT   2AC00 X2C_AcquireSemaphore
+_TEXT   2ACB0 X2C_CreateBoolSemaphore
+_TEXT   2ACE0 X2C_CreateMutex
+_TEXT   2AD10 X2C_CreateSemaphore
+_TEXT   2ADB0 X2C_CreateThread
+_TEXT   2AE50 X2C_CurrentThread
+_TEXT   2AE80 X2C_DeleteBoolSemaphore
+_TEXT   2AE90 X2C_DeleteMutex
+_TEXT   2AEA0 X2C_DeleteSemaphore
+_TEXT   2AED0 X2C_DeleteThread
+_TEXT   2AEE0 X2C_EnterMutex
+_TEXT   2AF00 X2C_ExitMutex
+_TEXT   2AF10 X2C_ExitThread
+_TEXT   2AF20 X2C_GetMyThreadId
+_TEXT   2AF30 X2C_GetThreadWord
+_TEXT   2AF40 X2C_INIT_THREADS
+_TEXT   2AF60 X2C_MyThreadHandle
+_TEXT   2AF70 X2C_ReleaseSemaphore
+_TEXT   2AFB0 X2C_ResetBoolSemaphore
+_TEXT   2AFD0 X2C_ResumeThread
+_TEXT   2AFE0 X2C_SemaphoreToEvent
+_TEXT   2AFF0 X2C_SetBoolSemaphore
+_TEXT   2B000 X2C_SetThreadWord
+_TEXT   2B010 X2C_SuspendThread
+_TEXT   2B020 X2C_SyncThreadState
+_TEXT   2B030 X2C_WaitEvents
+_TEXT   2B120 xosThreads_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xosTime.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2B140 X2C_CanGetTime
+_TEXT   2B150 X2C_CanSetTime
+_TEXT   2B160 X2C_FracsPerSec
+_TEXT   2B170 X2C_GetTime
+_TEXT   2B1E0 X2C_SetTime
+_TEXT   2B230 xosTime_BEGIN
+
+------ file E:\XDSOS2\src\xr\x86\xrAReal.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2B250 X2C_ENTIER
+_TEXT   2B2A0 X2C_TRUNCC
+_TEXT   2B310 X2C_TRUNCI
+_TEXT   2B3A0 xrAReal_BEGIN
+
+------ file E:\XDSOS2\src\xr\xrExcept.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2B3C0 X2C_ASSERT_F
+_TEXT   2B460 X2C_TRAP_F
+_TEXT   2B510 X2C_TRAP_G
+_TEXT   2B5C0 X2C_XInitHandler
+_TEXT   2B5E0 X2C_XOFF
+_TEXT   2B5F0 X2C_XON
+_TEXT   2B600 X2C_XREMOVE
+_TEXT   2B650 X2C_XRETRY
+_TEXT   2B690 X2C_doRaise
+_TEXT   2B6C0 X2C_init_exceptions
+_TEXT   2BCD0 xrExceptions_BEGIN
+
+------ file E:\XDSOS2\src\xr\x86\xrHistor.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2BCF0 X2C_scanStackHistory
+_TEXT   2BD10 X2C_show_history
+_TEXT   2BD20 X2C_show_profile
+_TEXT   2BD30 xrHistory_BEGIN
+
+------ file E:\XDSOS2\src\xr\xrInt64.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2BD50 X2C_64TOCARD
+_TEXT   2BD80 X2C_64TOINT
+_TEXT   2BDD0 X2C_ADD64
+_TEXT   2BE80 X2C_CARDTO64
+_TEXT   2BEA0 X2C_CMP64
+_TEXT   2BF40 X2C_INTTO64
+_TEXT   2BF60 X2C_IsNeg64
+_TEXT   2BF90 X2C_MUL64
+_TEXT   2BFF0 X2C_UnMinus64
+_TEXT   2C210 xrInt64_BEGIN
+
+------ file E:\XDSOS2\src\xr\xrM2MM.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2C230 X2C_ALLOCATE
+_TEXT   2C270 X2C_DEALLOCATE
+_TEXT   2C2F0 X2C_DYNALLOCATE
+_TEXT   2C360 X2C_DYNCALLOCATE
+_TEXT   2C400 X2C_DYNCDEALLOCATE
+_TEXT   2C420 X2C_DYNDEALLOCATE
+_TEXT   2C4C0 xrM2MM_BEGIN
+
+------ file E:\XDSOS2\src\xr\xrMM.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2C4E0 xrMM_Align
+_TEXT   2C500 xrMM_DynarrDescSize
+_TEXT   2C510 xrMM_MakeBusy
+_TEXT   2C580 xrMM_MakeFree
+_TEXT   2C5F0 xrMM_SetGap
+_TEXT   2C620 xrMM_SetNil
+_TEXT   2C640 X2C_COLLECT
+_TEXT   2C670 X2C_GC_INCREASE
+_TEXT   2C6F0 X2C_GC_INIT
+_TEXT   2C8D0 X2C_InitDesc
+_TEXT   2C930 xrMM_allocate
+_TEXT   2CB10 xrMM_dealloc
+_TEXT   2CD10 xrMM_free_block
+_TEXT   2CDA0 xrMM_ini_type_desc
+_TEXT   2D280 xrMM_BEGIN
+
+------ file E:\XDSOS2\src\xr\xrO2MM.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2D2A0 X2C_DESTRUCTOR
+_TEXT   2D350 X2C_DISABLE_COMPONENT
+_TEXT   2D410 X2C_DISPOSE
+_TEXT   2D4C0 X2C_MODULEDLL
+_TEXT   2D5C0 X2C_MODULEXE
+_TEXT   2D640 X2C_NEW
+_TEXT   2D6B0 X2C_NEW_OPEN
+_TEXT   2EAA0 xrO2MM_BEGIN
+
+------ file E:\XDSOS2\src\xr\xrThread.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2EAC0 X2C_DelMutex
+_TEXT   2EAF0 X2C_FreeAfterGC
+_TEXT   2EB30 X2C_FreeMutex
+_TEXT   2EB50 X2C_GetCurrent
+_TEXT   2EB60 X2C_InitThreads
+_TEXT   2EC30 X2C_LockMutex
+_TEXT   2EC50 X2C_NewMutex
+_TEXT   2EC80 X2C_PrepareToGC
+_TEXT   2ED90 X2C_RegisterThread
+_TEXT   2EDF0 X2C_SetCurrent
+_TEXT   2EE00 X2C_StartIterateThreads
+_TEXT   2EE10 X2C_StopIterateThreads
+_TEXT   2EE20 X2C_UnregisterThread
+_TEXT   2EEB0 xrThreads_BEGIN
+
+------ file E:\XDSOS2\src\xr\x86\xrnCorou.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2EED0 X2C_CopyJmpBuf
+_TEXT   2EF00 X2C_IOTRANSFER
+_TEXT   2EFE0 X2C_InitCoroutine
+_TEXT   2F030 X2C_LockCoroutines
+_TEXT   2F040 X2C_NEWPROCESS
+_TEXT   2F090 X2C_PROTECT
+_TEXT   2F0C0 X2C_RegisterCoroutine
+_TEXT   2F0E0 X2C_TRANSFER
+_TEXT   2F180 X2C_UnlockCoroutines
+_TEXT   2F190 X2C_UnregisterCoroutine
+_TEXT   2F1B0 X2C_ini_coroutines
+_TEXT   2F240 X2C_reg_stackbotm
+_TEXT   2F420 xrnCoroutines_BEGIN
+
+------ file E:\XDSOS2\src\os\xrnShowH.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2F440 X2C_EXIT_HISTORY
+_TEXT   2F4A0 X2C_HISTORY_ON
+_TEXT   2F4C0 X2C_HISTORY_REG
+_TEXT   2F550 X2C_IS_CODESEG
+_TEXT   2F8F0 xrnShowHistory_BEGIN
+
+------ file E:\XDSOS2\src\os\os2\xrnStart.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2F910 X2C_EstablishMain
+_TEXT   2F920 X2C_SetBreakHandler
+_TEXT   2F930 X2C_SetOSXHandler
+_TEXT   2F950 X2C_xStart
+_TEXT   2FEA0 xrnStart_BEGIN
+
+------ file src\xr\x86\xrnStk.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2FEC0 X2C_StackTop
+_TEXT   2FEC0 _X2C_StackTop
+
+------ file E:\XDSOS2\src\xr\x86\xrnStkSc.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   2FED0 X2C_STACK_SCAN_PROC
+_TEXT   300D0 xrnStkScan_BEGIN
+
+------ file E:\XDSOS2\src\xr\x86\xrnX2C.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   300F0 X2C_BEGIN
+_TEXT   30130 X2C_BEGINDLL
+_TEXT   301C0 xrnX2C_BEGIN
+
+------ file src\xr\x86\xrnacmp.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   301E0 X2C_adr_lss
+_TEXT   301E0 _X2C_adr_lss
+_TEXT   301EC _X2C_adr_gtr
+_TEXT   301EC X2C_adr_gtr
+
+------ file src\xr\x86\xrnmems.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   301F8 _X2C_MEMSET
+_TEXT   301F8 X2C_MEMSET
+
+------ file src\xr\x86\xrnmlng.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   302AC X2C_long
+_TEXT   302BB X2C_longl
+_TEXT   302CA X2C_ulong
+_TEXT   302DD X2C_ulongl
+
+------ file src\xr\x86\xrnstrcm.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   302F0 X2C_STRCMP_PROC
+_TEXT   302F0 _X2C_STRCMP_PROC
+
+------ file src\xr\x86\xrnstrle.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   30450 _X2C_LENGTH
+_TEXT   30450 X2C_LENGTH
+
+------ file E:\th024.c (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   304DC VioGetCurPos
+
+------ file E:\th025.c (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   30526 VioSetCurPos
+
+------ file E:\th028.c (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   30568 VioGetMode
+
+------ file E:\th032.c (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   305A5 VioReadCharStr
+
+------ file E:\th034.c (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   30601 VioWrtCharStr
+
+------ file E:\th036.c (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   30659 VioScrollUp
+
+------ file E:\th040.c (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   306C3 VioWrtNCell
+
+------ file thunk.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_TEXT   3071C __Thunk
+_TEXT   3076B __CallFar16
+_TEXT   307B5 __FlatToSel
+_TEXT   307BE __SelToFlat
+
+------ file src\xr\x86\X2C.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_DATA   515A4 X2C_HisList
+
+------ file src\xr\x86\fppclr.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_DATA   515C0 X2C_FLT_USED
+
+------ file src\xr\x86\xrnincls.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_DATA   5197C X2C_INCLs
+
+------ file src\xr\x86\X2C.asm (library D:\XDS\lib\x86\libxdsmt.lib)
+_BSS    6A240 _X2C_argc
+_BSS    6A240 X2C_argc
+_BSS    6A244 _X2C_argv
+_BSS    6A244 X2C_argv
+_BSS    6A248 X2C_sysarg
+_BSS    6A248 _X2C_sysarg
+
+------ file E:\XDSOS2\src\xr\xmRTS.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_BSS    6A280 X2C_MODULES
+_BSS    6A284 X2C_assertSrc
+_BSS    6A288 X2C_busymem
+_BSS    6A28C X2C_fs_init
+_BSS    6A28D X2C_hline
+_BSS    6A291 X2C_maxmem
+_BSS    6A295 X2C_objects
+_BSS    6A299 X2C_rtsSource
+_BSS    6A29D X2C_threshold
+_BSS    6A2A1 X2C_usedmem
+_BSS    6A2A5 x2c_td_null
+_BSS    6A2A9 x2c_td_ptr
+
+------ file E:\XDSOS2\src\xr\x86\xrHistor.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_BSS    6AD10 X2C_hisShow
+_BSS    6AD14 X2C_stkScan
+
+------ file E:\XDSOS2\src\xr\xrMM.mod (library D:\XDS\lib\x86\libxdsmt.lib)
+_BSS    6AD50 xrMM_COLLECTOR
+_BSS    6AD54 xrMM_DoDefrag
+_BSS    6AD55 xrMM_GCAUTO
+_BSS    6AD56 xrMM_GCTHRESCNT
+_BSS    6AD5A xrMM_O2MM_init
+_BSS    6AD5B xrMM_b_blocks
+_BSS    6AD8F xrMM_blk_max
+_BSS    6AD93 xrMM_blk_min
+_BSS    6AD97 xrMM_blockno
+_BSS    6AD9B xrMM_cur_offs
+_BSS    6AD9F xrMM_cur_td
+_BSS    6ADA3 xrMM_f_blocks
+_BSS    6ADD7 xrMM_parts
