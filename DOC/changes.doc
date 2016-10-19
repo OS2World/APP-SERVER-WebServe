@@ -1,5 +1,32 @@
 LIST OF CHANGES
 
+Version 1.5         (14 Aug 2016)
+   Fixed a persistent "file not found" problem.
+
+Version 1.4         (14 Aug 2016)
+   Fixed error in default MIME types: text/plain was being
+      reported as text/plan.
+   Added a few more entries to the default MIME type set.
+   Switched to loading the MIME types from a text file rather
+      than from the INI/TNI file.
+   This version is faulty and should not be used.
+
+Version 1.3         ( 9 May 2015)
+   Added the SSI command #exec. We now support #include and #exec cgi,
+      but #exec cmd has been disabled on security grounds.
+   Added a manual (webserve.inf).
+   The "not found" error message may be any file name with
+      the pattern 404*.html
+
+Version 1.2         ( 3 May 2015)
+   Allow optional per-domain file 404.html.
+   Fixed: server port was not being read from INI file.
+   Updated the README file.
+   If no filename specified in a URL, we choose one of
+      index.shtml, index.html, index.htm, whichever is
+      found first.
+   Server-side #include implemented, but only for *.shtml files.
+
 Version 1.1         (29 Apr 2015)
    Fixed: number of clients wasn't being displayed.
    Fixed: some source files weren't being added to the distribution.

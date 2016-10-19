@@ -7,6 +7,12 @@
 'xc =p setup.prj'
 '\apps\lxlite\lxlite *.exe'
 
+/* Create the INF file. */
+
+'cd doc'
+'ipfc -i webserve.ipf'
+'cd ..'
+
 /* Generate symbol files.  The next four lines can be skipped   */
 /* if you don't have Perl.                                      */
 
@@ -18,9 +24,7 @@ say "webserve.sym and webserve.xqs should now exist"
 /* Build level. */
 
 /* call seticon */
-say "Calling version()"
 ver = version()
-say "Returned from version()"
 call bldlvl ver
 
 /* Zip up the source files. */
@@ -43,8 +47,12 @@ del src.zip
 'cd ..'
 mkdir doc
 'copy ..\doc\changes.doc doc'
+'copy ..\doc\webserve.ipf doc'
 'copy ..\README'
+'copy ..\"404 NotFound.html"'
 'copy ..\file_id.diz'
+'copy ..\mime.cfg'
+'copy ..\doc\webserve.inf'
 'copy ..\WebServe.exe'
 'copy ..\WebServe.sym'
 'copy ..\WebServe.xqs'
@@ -57,7 +65,7 @@ mkdir doc
 
 /* Create the final zip file. */
 
-'zip -q -r ..\WebServe'ver'.zip .'
+'zip -q -r ..\WebServe_'ver'.zip .'
 
 /* Remove temporary files and directories. */
 

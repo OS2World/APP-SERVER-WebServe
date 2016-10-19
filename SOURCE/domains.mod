@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE Domains;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            3 April 2015                    *)
-        (*  Last edited:        29 April 2015                   *)
+        (*  Last edited:        9 May 2015                      *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -38,6 +38,9 @@ IMPORT Strings, INIData;
 
 FROM Types IMPORT
     (* type *)  CARD64;
+
+FROM LONGLONG IMPORT
+    (* const*)  Zero64;
 
 FROM Names IMPORT
     (* type *)  FilenameString, DomainName, HostName;
@@ -60,7 +63,7 @@ FROM MyClock IMPORT
 
 FROM FileOps IMPORT
     (* type *)  DirectoryEntry,
-    (* proc *)  FirstDirEntry, DirSearchDone;
+    (* proc *)  FirstDirEntry, DirSearchDone, Exists;
 
 (************************************************************************)
 
@@ -154,14 +157,117 @@ PROCEDURE CloseDomain (VAR (*INOUT*) D: Domain);
     END CloseDomain;
 
 (************************************************************************)
+(*                          FILE PROPERTIES                             *)
+(************************************************************************)
+
+PROCEDURE SizeOf (VAR (*IN*) filename: ARRAY OF CHAR): CARD64;
+
+    (* Returns the file size. *)
+
+    VAR DirEnt: DirectoryEntry;
+        found: BOOLEAN;
+
+    BEGIN
+        found := FirstDirEntry (filename, FALSE, FALSE, DirEnt);
+        DirSearchDone (DirEnt);
+        IF found THEN
+            RETURN DirEnt.size;
+        ELSE
+            RETURN Zero64;
+        END (*IF*);
+    END SizeOf;
+
+(************************************************************************)
+
+PROCEDURE DirOf (D: Domain;  VAR (*IN*) filename: ARRAY OF CHAR;
+                             VAR (*OUT*) directory: ARRAY OF CHAR);
+
+    (* Sets directory equal to the directory part of filename.  The     *)
+    (* specified filename is a full path name, and is known to be in    *)
+    (* the directory tree for this domain. The result starts with a     *)
+    (* '/', and is relative to the HTML root directory for the domain.  *)
+
+    VAR pos1, pos2: CARDINAL;
+        found1, found2: BOOLEAN;
+
+    BEGIN
+        Strings.Assign (filename, directory);
+
+        (* Since we know that filename was the output of LocateFile,    *)
+        (* below, we can simply strip the D^.rootdir from the front     *)
+        (* without needing to do any string matching.                   *)
+
+        Strings.Delete (directory, 0, LENGTH(D^.RootDir));
+
+        (* Now chop off the tail of the result. *)
+
+        Strings.FindPrev ('/', directory, LENGTH(directory), found1, pos1);
+        Strings.FindPrev ('\', directory, LENGTH(directory), found2, pos2);
+        IF found2 THEN
+            IF (NOT found1) OR (pos2 > pos1) THEN
+                pos1 := pos2;
+            END (*IF*);
+            found1 := TRUE;
+        END (*IF*);
+
+        IF found1 THEN
+            directory[pos1] := Nul;
+        ELSE
+            Strings.Assign ("/", directory);
+        END (*IF*);
+
+    END DirOf;
+
+(************************************************************************)
 (*                            LOCATING A FILE                           *)
 (************************************************************************)
 
+PROCEDURE AppendDefaultFilename (D: Domain;  VAR (*INOUT*) name: ARRAY OF CHAR);
+
+    (* To be called when name ends with a '/'.  We append one of        *)
+    (* "index.shtml", "index.html", "index.htm", whichever exists.      *)
+
+    VAR base: FilenameString;
+
+    (********************************************************************)
+
+    PROCEDURE Try (f: ARRAY OF CHAR): BOOLEAN;
+
+        VAR testname: FilenameString;
+
+        BEGIN
+            Strings.Assign (base, testname);
+            Strings.Append (f, testname);
+            IF NOT Exists (testname) THEN
+                RETURN FALSE;
+            END (*IF*);
+            Strings.Append (f, name);
+            RETURN TRUE;
+        END Try;
+
+    (********************************************************************)
+
+    BEGIN
+        Strings.Assign (D^.RootDir, base);
+        Strings.Append (name, base);
+
+        IF NOT Try("index.shtml") THEN
+            IF NOT Try("index.html") THEN
+                IF NOT Try("index.htm") THEN
+                    (* Leave name unchanged. *)
+                END (*IF*);
+            END (*IF*);
+        END (*IF*);
+
+    END AppendDefaultFilename;
+
+(************************************************************************)
+
 PROCEDURE LocateFile (D: Domain;  VAR (*IN*) URL: ARRAY OF CHAR;
-                              VAR (*OUT*) filename: ARRAY OF CHAR;
-                                VAR (*OUT*) lastmodified: ARRAY OF CHAR;
-                                    VAR (*OUT*) size: CARD64;
-                                      VAR (*OUT*) CGI: BOOLEAN): BOOLEAN;
+                        VAR (*OUT*) filename: ARRAY OF CHAR;
+                          VAR (*OUT*) lastmodified: ARRAY OF CHAR;
+                              VAR (*OUT*) size: CARD64;
+                                VAR (*OUT*) CGI, SHTML: BOOLEAN): BOOLEAN;
 
     (* Translates a URL into a file name, also returns its size.  If    *)
     (* CGI is true then this is an executable.                          *)
@@ -169,7 +275,7 @@ PROCEDURE LocateFile (D: Domain;  VAR (*IN*) URL: ARRAY OF CHAR;
     VAR dir, args: FilenameString;
         DirEnt: DirectoryEntry;
         pos: CARDINAL;
-        found, Qfound: BOOLEAN;
+        found, Qfound, filefound: BOOLEAN;
 
     BEGIN
         size := CARD64{0,0};
@@ -194,18 +300,40 @@ PROCEDURE LocateFile (D: Domain;  VAR (*IN*) URL: ARRAY OF CHAR;
         ELSE
             dir := D^.RootDir;
             IF URL[LENGTH(URL)-1] = '/' THEN
-                Strings.Append ("index.html", URL);
+                AppendDefaultFilename (D, URL);
             END (*IF*);
         END (*IF*);
 
+        (* See whether the name ends with .shtml  *)
+
+        IF LENGTH(URL) < 6 THEN
+            SHTML := FALSE;
+        ELSE
+            Strings.Assign (URL, filename);
+            Strings.Delete (filename, 0, LENGTH(filename)-6);
+            SHTML := StringMatch (filename, ".shtml");
+        END (*IF*);
+
+        (* Convert the filename to a fully specified path string. *)
+
         Strings.Assign (dir, filename);
         Strings.Append (URL, filename);
-        found := FirstDirEntry (filename, FALSE, FALSE, DirEnt);
-        IF found THEN
+        filefound := FirstDirEntry (filename, FALSE, FALSE, DirEnt);
+        IF filefound THEN
             (* A file of this name exists. *)
             size := DirEnt.size;
             PackedDateTimeToGMT (DirEnt.datePkd, DirEnt.timePkd,
                                                     lastmodified);
+
+            (* Special case where filename contains a wildcard. *)
+
+            Strings.FindNext ("*", filename, 0, found, pos);
+            IF found THEN
+                Strings.FindPrev ("/", filename, pos, found, pos);
+                filename[pos+1] := Nul;
+                Strings.Append (DirEnt.name, filename);
+            END (*IF*);
+
         ELSE
             (* There might still be a directory of this name,   *)
             (* but in the present version I don't handle that.  *)
@@ -218,7 +346,7 @@ PROCEDURE LocateFile (D: Domain;  VAR (*IN*) URL: ARRAY OF CHAR;
             Strings.Append (args, filename);
         END (*IF*);
 
-        RETURN found;
+        RETURN filefound;
 
     END LocateFile;
 

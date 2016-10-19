@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server session manager                                            *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2016   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE MIMEtypes;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            7 April 2015                    *)
-        (*  Last edited:        22 April 2015                   *)
+        (*  Last edited:        14 August 2016                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -40,29 +40,113 @@ FROM Names IMPORT
     (* type *)  FilenameString;
 
 FROM STextIO IMPORT
-    (* proc *)  WriteString, WriteLn;
+    (* proc *)  WriteChar, WriteString, WriteLn;
 
-FROM Inet2Misc IMPORT
-    (* proc *)  StringMatch;
+FROM FileOps IMPORT
+    (* const*)  NoSuchChannel,
+    (* type *)  ChanId,
+    (* proc *)  Exists, DeleteFile, OpenOldFile, OpenNewFile, CloseFile,
+                ReadLine, FWriteChar, FWriteString, FWriteLn;
 
 (************************************************************************)
 
+CONST
+    Nul = CHR(0);  CtrlZ = CHR(26);  Space = ' ';  Tab = CHR(9);
+    MaxTypes = 1024;
+    MaxExtensions = 1024;
+
 TYPE
     ExtensionStr = ARRAY [0..7] OF CHAR;
-    TypeStr = ARRAY [0..63] OF CHAR;
+    TypeStr = ARRAY [0..255] OF CHAR;
 
     Entry = RECORD
                 ext:  ExtensionStr;
-                type: TypeStr;
+                typenum: CARDINAL;
             END (*RECORD*);
 
-CONST
-    Nul = CHR(0);
-    MaxEntries = 512;
-
 VAR
-    Map: ARRAY [0..MaxEntries-1] OF Entry;
-    EntryCount: CARDINAL;
+    TypeCount, ExtensionCount: CARDINAL;
+    TypeTable: ARRAY [0..MaxTypes-1] OF TypeStr;
+    ExtensionTable: ARRAY [0..MaxExtensions] OF Entry;
+
+(************************************************************************)
+(*                  FOR TESTING: DUMP THE STORED DATA                   *)
+(************************************************************************)
+
+(*
+PROCEDURE DumpTable;
+
+    (* Needed only while testing this module.  Dumps the MIME table *)
+    (* to a text file.                                              *)
+
+    CONST filename = "sorted.txt";
+
+    VAR j: CARDINAL;  cid: ChanId;
+
+    BEGIN
+        IF Exists (filename) THEN
+            DeleteFile (filename);
+        END (*IF*);
+        cid := OpenNewFile (filename, FALSE);
+        IF ExtensionCount > 0 THEN
+            FOR j := 0 TO ExtensionCount-1 DO
+                FWriteString (cid, ExtensionTable[j].ext);
+                FWriteChar (cid, " ");
+                FWriteString (cid, TypeTable[ExtensionTable[j].typenum]);
+                FWriteLn (cid);
+            END (*FOR*);
+        CloseFile (cid);
+        END (*IF*);
+    END DumpTable;
+*)
+
+(************************************************************************)
+(*                    SEARCHING THE EXTENSION TABLE                     *)
+(************************************************************************)
+
+PROCEDURE LocateExtension (VAR (*IN*) ext: ARRAY OF CHAR;
+                            VAR (*OUT*) pos: CARDINAL): BOOLEAN;
+
+    (* If ext is in ExtensionTable, returns TRUE and pos set to its     *)
+    (* position.  If not, returns FALSE with pos set to where it        *)
+    (* can be inserted.                                                 *)
+
+    VAR low, high: CARDINAL;
+        comp: Strings.CompareResults;
+        found: BOOLEAN;
+
+    BEGIN
+        low := 0;  high := ExtensionCount;
+        IF high = 0 THEN
+            (* An empty table is a special case. *)
+            pos := 0;
+            RETURN FALSE;
+        END (*IF*);
+
+        (* Let p = desired final value of pos.  *)
+        (* Loop invariant:  low <= p < high     *)
+
+        found := FALSE;  comp := Strings.equal;
+        WHILE (NOT found) AND (high > low) DO
+            pos := (low + high) DIV 2;
+            (* Note low <= pos < high *)
+            comp := Strings.Compare (ext, ExtensionTable[pos].ext);
+            IF comp = Strings.equal THEN
+                found := TRUE;
+            ELSIF comp = Strings.less THEN
+                (* Search the lower half of the range. *)
+                high := pos;
+            ELSE
+                (* Search the upper half of the range. *)
+                low := pos+1;
+            END (*IF*);
+        END (*WHILE*);
+        IF comp = Strings.greater THEN
+            (* Correct for undershoot. *)
+            INC (pos);
+        END (*IF*);
+        RETURN found;
+    END LocateExtension;
 
 (************************************************************************)
 (*                  MAPPING A FILE NAME TO A MIME TYPE                  *)
@@ -71,10 +155,8 @@ VAR
 PROCEDURE IdentifyType (VAR (*IN*) filename: ARRAY OF CHAR;
                            VAR (*OUT*) type: ARRAY OF CHAR);
 
-    (* Returns the MIME type of a file.  Returns an empty string    *)
-    (* if the type is unknown.                                      *)
-
-    (* At present just a dummy. *)
+    (* Returns the MIME type of a file.  Returns an empty string if the *)
+    (* type is unknown.                                                 *)
 
     VAR L, pos: CARDINAL;
         found: BOOLEAN;
@@ -89,20 +171,15 @@ PROCEDURE IdentifyType (VAR (*IN*) filename: ARRAY OF CHAR;
             found := found AND (L > pos);
             IF found THEN
                 Strings.Extract (filename, pos+1, L-pos, extension);
+                Strings.Capitalize (extension);
             END (*IF*);
         END (*IF*);
 
-        IF found THEN
-            (* Search our table of types. *)
-            pos := 0;  found := FALSE;
-            WHILE NOT found AND (pos < MaxEntries) DO
-                found := StringMatch (Map[pos].ext, extension);
-                INC (pos);
-            END (*LOOP*);
-        END (*IF*);
+        found := found AND LocateExtension (extension, pos);
 
         IF found THEN
-            Strings.Assign (Map[pos-1].type, type);
+            L := ExtensionTable[pos].typenum;
+            Strings.Assign (TypeTable[L], type);
         ELSE
             Strings.Assign ("", type);
         END (*IF*);
@@ -110,90 +187,154 @@ PROCEDURE IdentifyType (VAR (*IN*) filename: ARRAY OF CHAR;
     END IdentifyType;
 
 (************************************************************************)
-(*                    CREATING THE TRANSLATION TABLE                    *)
+(*                    CREATING THE TRANSLATION TABLES                   *)
 (************************************************************************)
 
-PROCEDURE NewTableEntry (VAR (*IN*) ext: ARRAY OF CHAR;
-                          VAR (*IN*) type: ARRAY OF CHAR);
+PROCEDURE NewType (VAR (*IN*) type: TypeStr): CARDINAL;
 
-    (* The 'line' string starts with a MIME type and continues with a   *)
-    (* space-separated list of extensions.                              *)
+    (* Stores one type name.  *)
 
     BEGIN
-        IF EntryCount >= MaxEntries THEN
-            WriteString ("ERROR: MIME table overflow");
+        IF TypeCount >= MaxTypes THEN
+            WriteString ("ERROR: MIME type table overflow");
             WriteLn;
         ELSE
-            Strings.Assign (ext, Map[EntryCount].ext);
-            Strings.Assign (type, Map[EntryCount].type);
-            INC (EntryCount);
+            TypeTable[TypeCount] := type;
+            INC (TypeCount);
         END (*IF*);
-    END NewTableEntry;
+        RETURN TypeCount-1;
+    END NewType;
 
 (************************************************************************)
 
-PROCEDURE AddEntry (line: ARRAY OF CHAR);
+PROCEDURE NewExtension (typenum: CARDINAL;  VAR (*IN*) ext: ExtensionStr);
 
-    (* The 'line' string starts with a MIME type and continues with a   *)
-    (* space-separated list of extensions.                              *)
+    (* Stores one extension table entry.  *)
+    (* This version produces a sorted table. *)
 
-    VAR type: TypeStr;  ext: ExtensionStr;
-        pos0, pos: CARDINAL;  found: BOOLEAN;
+    VAR k, pos: CARDINAL;
 
     BEGIN
-        Strings.FindNext (' ', line, 0, found, pos);
-        IF found THEN
-            Strings.Extract (line, 0, pos, type);
-            WHILE line[pos] = ' ' DO
-                REPEAT
-                    INC (pos);
-                UNTIL line[pos] <> ' ';
-                pos0 := pos;
-                Strings.FindNext (' ', line, pos0, found, pos);
-                IF NOT found THEN
-                    pos := Strings.Length(line);
-                END (*IF*);
-                IF pos > pos0 THEN
-                    Strings.Extract (line, pos0, pos-pos0, ext);
-                    NewTableEntry (ext, type);
-                END (*IF*);
-            END (*WHILE*);
-        ELSE
-            WriteString ("ERROR: Faulty MIME table specification");
+        IF ExtensionCount >= MaxExtensions THEN
+            WriteString ("ERROR: MIME extension table overflow");
             WriteLn;
+        ELSE
+            Strings.Capitalize (ext);
+            IF LocateExtension (ext, pos) THEN
+                (* Duplicate entry, don't store the new one. *)
+            ELSE
+
+                (* Make a space for the new entry. *)
+
+                k := ExtensionCount;
+                INC (ExtensionCount);
+                WHILE k > pos DO
+                    ExtensionTable[k] := ExtensionTable[k-1];
+                    DEC (k);
+                END (*WHILE*);
+
+                (* Insert the new entry. *)
+
+                ExtensionTable[k].ext := ext;
+                ExtensionTable[k].typenum := typenum;
+
+            END (*IF*);
         END (*IF*);
-    END AddEntry;
+    END NewExtension;
 
 (************************************************************************)
 (*                           INITIALISATION                             *)
 (************************************************************************)
 
-PROCEDURE LoadMIMETable (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
+PROCEDURE LoadMIMETableFromFile;
 
-    (* Fills in the MIME translation table. *)
+    (* Fills in the MIME translation table from the data in MIME.cfg.   *)
 
-    VAR hini: INIData.HINI;
-        state: INIData.StringReadState;
-        string: ARRAY [0..255] OF CHAR;
-        app, key: ARRAY [0..4] OF CHAR;
+    VAR line: ARRAY [0..1023] OF CHAR;
+
+    (********************************************************************)
+
+    PROCEDURE SkipSpaces;
+
+        (* Deletes any leading space or tab characters from line. *)
+
+        VAR k: CARDINAL;
+
+        BEGIN
+            k := 0;
+            WHILE (line[k] = Space) OR (line[k] = Tab) DO
+                INC (k);
+            END (*WHILE*);
+            IF k > 0 THEN
+                Strings.Delete (line, 0, k);
+            END (*IF*);
+        END SkipSpaces;
+
+    (********************************************************************)
+
+    PROCEDURE GetNextToken (VAR (*OUT*) token: ARRAY OF CHAR);
+
+        (* Removes the next substring from line. *)
+
+        VAR pos: CARDINAL;  found: BOOLEAN;
+
+        BEGIN
+            Strings.FindNext (' ', line, 0, found, pos);
+            IF NOT found THEN
+                pos := Strings.Length(line);
+            END (*IF*);
+            Strings.Assign (line, token);
+            token[pos] := Nul;
+            Strings.Delete (line, 0, pos);
+            SkipSpaces;
+        END GetNextToken;
+
+    (********************************************************************)
+
+    VAR cid: ChanId;  k: CARDINAL;
+        type: TypeStr;
+        extension: ExtensionStr;
 
     BEGIN
-        EntryCount := 0;
-        hini := INIData.OpenINIFile (INIname, UseTNI);
-        app := "$SYS";  key := "MIME";
-        INIData.GetStringList (hini, app, key, state);
-        LOOP
-            INIData.NextString (state, string);
-            IF string[0] = Nul THEN
-                EXIT (*LOOP*);
-            END (*IF*);
-            AddEntry (string);
-        END (*LOOP*);
-        INIData.CloseStringList (state);
-        INIData.CloseINIFile (hini);
-    END LoadMIMETable;
+        ExtensionCount := 0;  TypeCount := 0;
+        cid := OpenOldFile ("MIME.cfg", FALSE, FALSE);
+        IF cid = NoSuchChannel THEN
+            WriteString ("Missing file MIME.cfg, no MIME types defined.");
+            WriteLn;
+        ELSE
+            line[0] := Nul;
+            WHILE line[0] <> CtrlZ DO
+                ReadLine (cid, line);
+                SkipSpaces;
+
+                (* Ignore empty lines and comments. *)
+
+                IF (line[0] <> Nul) AND (line[0] <> CtrlZ) AND (line[0] <> ';') THEN
+
+                    GetNextToken (type);
+                    k := NewType (type);
+
+                    (* We have the type, now extract the extensions,    *)
+                    (* and create a table entry for each extension.     *)
+
+                    REPEAT
+                        GetNextToken (extension);
+                        IF extension[0] <> Nul THEN
+                            NewExtension (k, extension);
+                        END (*IF*);
+                    UNTIL extension[0] = Nul;
+
+                END (*IF*);
+
+            END (*WHILE*);
+            CloseFile (cid);
+        END (*IF*);
+    END LoadMIMETableFromFile;
 
 (************************************************************************)
 
+BEGIN
+    LoadMIMETableFromFile;
+    (*DumpTable;*)
 END MIMEtypes.
 

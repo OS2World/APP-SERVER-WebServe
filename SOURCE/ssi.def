@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*  Web server session manager                                            *)
+(*  Web server                                                            *)
 (*  Copyright (C) 2015   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
@@ -20,59 +20,32 @@
 (*                                                                        *)
 (**************************************************************************)
 
-DEFINITION MODULE Domains;
+DEFINITION MODULE SSI;
 
         (********************************************************)
         (*                                                      *)
-        (*            Operations within a web domain            *)
+        (*                 Server-side include                  *)
+        (*                                                      *)
+        (*  The purpose of this module is to handle embedded    *)
+        (*  SSI directives inside an shtml file.                *)
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
-        (*  Started:            3 April 2015                    *)
+        (*  Started:            2 May 2015                      *)
         (*  Last edited:        3 May 2015                      *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
 
 
-
-FROM Types IMPORT
-    (* type *)  CARD64;
-
-TYPE Domain;       (* is private *)
+FROM Domains IMPORT (*type*) Domain;
 
 
-PROCEDURE UpdateDomainList (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
+PROCEDURE ProcessSSI (D: Domain; VAR (*INOUT*) filename, CurrentDir: ARRAY OF CHAR);
 
-    (* Loads our domain information from the INI file. *)
+    (* The specified file is replaced by the modified version that      *)
+    (* results from processing the SSI directives.  Assumption:         *)
+    (* CurrentDir starts with a '/', and is a specification relative to *)
+    (* the HTML root directory for this domain.                         *)
 
-PROCEDURE OpenDomain (name: ARRAY OF CHAR): Domain;
-
-    (* Opens a domain record. *)
-
-PROCEDURE CloseDomain (VAR (*INOUT*) D: Domain);
-
-    (* Closes the domain record. *)
-
-PROCEDURE LocateFile (D: Domain;  VAR (*IN*) URL: ARRAY OF CHAR;
-                        VAR (*OUT*) filename: ARRAY OF CHAR;
-                          VAR (*OUT*) lastmodified: ARRAY OF CHAR;
-                              VAR (*OUT*) size: CARD64;
-                                VAR (*OUT*) CGI, SHTML: BOOLEAN): BOOLEAN;
-
-    (* Translates a URL into a file name, also returns its size.  If    *)
-    (* CGI is true then this is an executable.                          *)
-
-PROCEDURE DirOf (D: Domain;  VAR (*IN*) filename: ARRAY OF CHAR;
-                             VAR (*OUT*) directory: ARRAY OF CHAR);
-
-    (* Sets directory equal to the directory part of filename.  The     *)
-    (* specified filename is a full path name, and is known to be in    *)
-    (* the directory tree for this domain. The result starts with a     *)
-    (* '/', and is relative to the HTML root directory for the domain.  *)
-
-PROCEDURE SizeOf (VAR (*IN*) filename: ARRAY OF CHAR): CARD64;
-
-    (* Returns the file size. *)
-
-END Domains.
+END SSI.
 

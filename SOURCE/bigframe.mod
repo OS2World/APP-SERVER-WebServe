@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE BigFrame;
         (*             The settings notebook and its frame          *)
         (*                                                          *)
         (*    Started:        4 April 2015                          *)
-        (*    Last edited:    28 April 2015                         *)
+        (*    Last edited:    14 August 2016                        *)
         (*    Status:         Working                               *)
         (*                                                          *)
         (************************************************************)
@@ -68,7 +68,7 @@ CONST
 
 TYPE
     LanguageString = ARRAY [0..31] OF CHAR;
-    Page = (pbase, pdomains, plog, pmime, pabout);
+    Page = (pbase, pdomains, plog, pabout);
 
 VAR
     (* INI file name for the Setup INI *)
@@ -107,7 +107,6 @@ PROCEDURE SetLanguage;
         CommonSettings.CurrentLanguage (LangCode, NewName);
         IF NOT Strings.Equal(NewName, OurLanguage) THEN
             SUPage1.SetLanguage (LangCode);
-            SUMIME.SetLanguage (LangCode);
             SULogging.SetLanguage (LangCode);
             DomainPage.SetLanguage (LangCode);
             About.SetLanguage (LangCode);
@@ -131,7 +130,6 @@ PROCEDURE SetPageFonts (UpdateAll: BOOLEAN);
 
             IF UpdateAll THEN
                 SUPage1.SetFont (PageFont);
-                SUMIME.SetFont (PageFont);
                 SULogging.SetFont (PageFont);
                 DomainPage.SetFont (PageFont);
                 About.SetFont (PageFont);
@@ -203,7 +201,7 @@ PROCEDURE InitialiseNotebook (hwnd: OS2.HWND);
         pagehandle[pbase] := SUPage1.CreatePage(hwnd, IDofPage[pbase]);
         pagehandle[pdomains] := DomainPage.CreatePage(hwnd, IDofPage[pdomains]);
         pagehandle[plog] := SULogging.CreatePage(hwnd, IDofPage[plog]);
-        pagehandle[pmime] := SUMIME.CreatePage(hwnd, IDofPage[pmime]);
+        SUMIME.DeleteObsoleteEntries;
         About.Create(hwnd, IDofPage[pabout]);
 
         CommonSettings.EnableFontChanges(TRUE);
@@ -400,7 +398,6 @@ PROCEDURE ["SysCall"] MainDialogueProc(hwnd     : OS2.HWND
                    SUPage1.StoreData (pagehandle[pbase]);
                    DomainPage.StoreData;
                    SULogging.StoreData;
-                   SUMIME.StoreData;
                    (* Nothing to store on About page *)
                    RETURN OS2.WinDefDlgProc(hwnd, msg, mp1, mp2);
 

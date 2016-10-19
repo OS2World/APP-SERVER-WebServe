@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  The WebServe web server                                               *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2016   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ MODULE WebServe;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        29 April 2015                   *)
+        (*  Last edited:        1 August 2016                   *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (*     The relevant standard is RFC2616                 *)
@@ -238,16 +238,14 @@ PROCEDURE LoadINIData;
 
     (********************************************************************)
 
-    VAR name: ARRAY [0..15] OF CHAR;
-
     BEGIN
         SYSapp := "$SYS";
         IF UseTNI THEN
             ININame := "WebServe.tni";
-            hini := OpenINIFile(name, TRUE);
+            hini := OpenINIFile(ININame, TRUE);
         ELSE
             ININame := "WebServe.ini";
-            hini := OpenINIFile(name, FALSE);
+            hini := OpenINIFile(ININame, FALSE);
         END (*IF*);
         IF INIValid (hini) THEN
             IF NOT GetItem ("ServerPort", ServerPort) THEN
@@ -410,7 +408,7 @@ PROCEDURE RunTheServer;
         IF ScreenEnabled THEN
             Strings.Append ("            ", message);
             UpdateTopScreenLine (0, message);
-            UpdateTopScreenLine (25, "(C) 2015 Peter Moylan");
+            UpdateTopScreenLine (25, "(C) 2016 Peter Moylan");
 
             EVAL (SetBreakHandler (ControlCHandler));
         END (*IF*);

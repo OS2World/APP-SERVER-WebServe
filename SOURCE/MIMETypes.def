@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server session manager                                            *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2016   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,21 +28,17 @@ DEFINITION MODULE MIMEtypes;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            7 April 2015                    *)
-        (*  Last edited:        22 April 2015                   *)
+        (*  Last edited:        14 August 2016                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
 
 
-PROCEDURE LoadMIMETable (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
-
-    (* Fills in the MIME translation table. *)
-
 PROCEDURE IdentifyType (VAR (*IN*) filename: ARRAY OF CHAR;
                            VAR (*OUT*) type: ARRAY OF CHAR);
 
-    (* Returns the MIME type of a file.  Returns an empty string    *)
-    (* if the type is unknown.                                      *)
+    (* Returns the MIME type of a file.  Returns an empty string if the *)
+    (* type is unknown.                                                 *)
 
 END MIMEtypes.
 

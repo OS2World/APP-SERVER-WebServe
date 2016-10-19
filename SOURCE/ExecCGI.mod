@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*  Web server session manager                                            *)
+(*  Web server                                                            *)
 (*  Copyright (C) 2015   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)

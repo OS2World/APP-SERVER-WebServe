@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server session manager                                            *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2016   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,10 +28,8 @@ IMPLEMENTATION MODULE Requests;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        27 April 2015                   *)
+        (*  Last edited:        14 August 2016                  *)
         (*  Status:             OK                              *)
-        (*          Will probably need to add more headers      *)
-        (*          in response after checking RFC 2616.        *)
         (*                                                      *)
         (********************************************************)
 
@@ -44,7 +42,7 @@ IMPLEMENTATION MODULE Requests;
 (*      (Nothing at present)                                            *)
 (*                                                                      *)
 (* FOR FURTHER CONSIDERATION:                                           *)
-(*      Handle one or all of the If-Modified-Since, If-Unmodified-Since,*)
+(*      Handle one or both of the If-Modified-Since                     *)
 (*                or If-Range header fields.                            *)
 (*      Handle "partial GET" requested by a Range header.               *)
 (*                                                                      *)
@@ -98,7 +96,7 @@ FROM TaskControl IMPORT
     (* proc *)  CreateLock, DestroyLock, Obtain, Release;
 
 FROM Inet2Misc IMPORT
-    (* proc *)  WaitForSocketOut, IPToString;
+    (* proc *)  WaitForSocketOut, IPToString, StringMatch;
 
 FROM MyClock IMPORT
     (* proc *)  FormatCurrentDateTime, CurrentDateAndTimeGMT, CompareDateStrings;
@@ -118,12 +116,19 @@ FROM FileOps IMPORT
                 FWriteChar, FWriteString, FWriteLJCard64, FWriteLn,
                 DeleteFile, FirstDirEntry, DirSearchDone;
 
+FROM Misc IMPORT
+    (* proc *)  MakeNewFilename, SkipLeadingSpaces, MatchLeading;
+
+FROM SSI IMPORT
+    (* proc *)  ProcessSSI;
+
 FROM Domains IMPORT
     (* type *)  Domain,
-    (* proc *)  UpdateDomainList, OpenDomain, CloseDomain, LocateFile;
+    (* proc *)  UpdateDomainList, OpenDomain, CloseDomain, LocateFile,
+                SizeOf, DirOf;
 
 FROM MIMEtypes IMPORT
-    (* proc *)  LoadMIMETable, IdentifyType;
+    (* proc *)  IdentifyType;
 
 FROM ExecCGI IMPORT
     (* proc *)  ExecProgram;
@@ -131,7 +136,7 @@ FROM ExecCGI IMPORT
 (************************************************************************)
 
 CONST
-    Nul = CHR(0);  Space = ' ';  CR = CHR(13);  LF = CHR(10);
+    Nul = CHR(0);  CR = CHR(13);  LF = CHR(10);
     NilDomain = CAST(Domain, NIL);
 
 VAR CRLF: ARRAY [0..1] OF CHAR;
@@ -162,11 +167,6 @@ VAR
 
     LogCtx: LogContext;
 
-    (* String used in creating a unique file name. *)
-
-    NextName: ARRAY [0..7] OF CHAR;
-    NextNameLock: Lock;
-
     (* Common log. *)
 
     CommonLogLock: Lock;
@@ -176,57 +176,6 @@ VAR
     (* Specifies how much to put in the transaction log. *)
 
     DetailedLogging: BOOLEAN;
-
-(************************************************************************)
-(*                    CREATING A UNIQUE FILENAME                        *)
-(************************************************************************)
-
-PROCEDURE MakeUniqueName (VAR (*OUT*) name: ARRAY OF CHAR);
-
-    (* Generates a unique 8-character string.  The argument must of     *)
-    (* course be big enough to take at least 8 characters.              *)
-
-    (********************************************************************)
-
-    PROCEDURE Increment (N: CARDINAL);
-
-        (* Increments NextName[N], with carry as appropriate. *)
-
-        BEGIN
-            IF NextName[N] = '9' THEN
-                NextName[N] := 'A';
-            ELSIF NextName[N] = 'Z' THEN
-                NextName[N] := '0';
-                IF N > 0 THEN
-                    Increment (N-1);
-                END (*IF*);
-            ELSE
-                INC (NextName[N]);
-            END (*IF*);
-        END Increment;
-
-    (********************************************************************)
-
-    BEGIN
-        Obtain (NextNameLock);
-        Strings.Assign (NextName, name);
-        Increment (7);
-        Release (NextNameLock);
-    END MakeUniqueName;
-
-(************************************************************************)
-
-PROCEDURE MakeNewFilename (VAR (*OUT*) NewName: ARRAY OF CHAR);
-
-    (* Creates a file name of the form xxxxxxxx.tmp, where xxxxxxxx is  *)
-    (* chosen such that a file of that name does not already exist.     *)
-
-    BEGIN
-        REPEAT
-            MakeUniqueName (NewName);
-            Strings.Append (".tmp", NewName);
-        UNTIL NOT Exists(NewName);
-    END MakeNewFilename;
 
 (************************************************************************)
 (*                              COMMON LOG                              *)
@@ -461,8 +410,11 @@ PROCEDURE FaultyRequestResponse (sess: Session);
 PROCEDURE NotFoundResponse (sess: Session);
 
     VAR S: Socket;  ID: TransactionLogID;
+        pos: CARDINAL;
+        size: CARD64;  CGI, SHTML: BOOLEAN;
         message: ARRAY [0..63] OF CHAR;
         parambuffer: ARRAY [0..127] OF CHAR;
+        filename: FilenameString;
 
     BEGIN
         S := sess^.socket;
@@ -472,13 +424,31 @@ PROCEDURE NotFoundResponse (sess: Session);
         CurrentDateAndTimeGMT (parambuffer);
         Strings.Append (parambuffer, message);
         PutAndLogLine (S, ID, message, FALSE);
-        PutAndLogLine (S, ID, "Content-Type: text/plain", FALSE);
-        PutAndLogLine (S, ID, "Content-Length: 15", FALSE);
-        PutAndLogLine (S, ID, "", FALSE);
-        PutAndLogLine (S, ID, "404 Not Found", FALSE);
-        IF CommonLogEnabled THEN
-            MakeCommonLogEntry (sess, "404", CARD64{15,0});
+        message := "/404*.html";
+        IF LocateFile (sess^.domain, message, filename,
+                                  sess^.lastmodified, size, CGI, SHTML) THEN
+            PutAndLogLine (S, ID, "Content-Type: text/html", FALSE);
+            message := "Content-Length: ";
+            pos := Strings.Length (message);
+            ConvertCard64 (size, message, pos);
+            message[pos] := Nul;
+            PutAndLogLine (S, ID, message, FALSE);
+            PutAndLogLine (S, ID, "", FALSE);
+
+            SendFile (S, filename);
+
+        ELSE
+            PutAndLogLine (S, ID, "Content-Type: text/plain", FALSE);
+            PutAndLogLine (S, ID, "Content-Length: 15", FALSE);
+            PutAndLogLine (S, ID, "", FALSE);
+            PutAndLogLine (S, ID, "404 Not Found", FALSE);
+            size := CARD64{15,0};
         END (*IF*);
+
+        IF CommonLogEnabled THEN
+            MakeCommonLogEntry (sess, "404", size);
+        END (*IF*);
+
     END NotFoundResponse;
 
 (************************************************************************)
@@ -505,7 +475,7 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
     VAR message: ARRAY [0..1023] OF CHAR;
         parambuffer: ARRAY [0..127] OF CHAR;
         filename, tempfile: FilenameString;
-        S: Socket;  CGI, dontsend: BOOLEAN;
+        S: Socket;  CGI, SHTML, dontsend, mustdelete: BOOLEAN;
         pos: CARDINAL;
         ID: TransactionLogID;
         size: CARD64;
@@ -516,16 +486,17 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
             sess^.domain := OpenDomain (sess^.Host);
         END (*IF*);
         S := sess^.socket;
+        mustdelete := FALSE;
 
         IF sess^.domain = NilDomain THEN
 
             NotFoundResponse (sess);
 
         ELSIF LocateFile (sess^.domain, sess^.URL, filename,
-                                  sess^.lastmodified, size, CGI) THEN
+                                  sess^.lastmodified, size, CGI, SHTML) THEN
 
             dontsend := FALSE;
-            IF NOT CGI AND (sess^.ifmodifiedsince[0] <> Nul) THEN
+            IF NOT CGI AND NOT SHTML AND (sess^.ifmodifiedsince[0] <> Nul) THEN
                 dontsend := CompareDateStrings (sess^.lastmodified,
                                         sess^.ifmodifiedsince) <= 0;
             END (*IF*);
@@ -583,6 +554,20 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
                 ELSE
                     (* Return the file. *)
 
+                    IdentifyType (filename, parambuffer);
+                    IF SHTML THEN
+                        DirOf (sess^.domain, filename, tempfile);
+                        ProcessSSI (sess^.domain, filename, tempfile);
+                        sess^.lastmodified[0] := Nul;
+                        size := SizeOf (filename);
+                        mustdelete := TRUE;
+                    END (*IF*);
+                    IF parambuffer[0] <> Nul THEN
+                        message := "Content-Type: ";
+                        Strings.Append (parambuffer, message);
+                        PutAndLogLine (S, ID, message, FALSE);
+                    END (*IF*);
+
                     IF sess^.lastmodified[0] <> Nul THEN
                         message := "Last-Modified: ";
                         Strings.Append (sess^.lastmodified, message);
@@ -595,17 +580,13 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
                     message[pos] := Nul;
                     PutAndLogLine (S, ID, message, FALSE);
 
-                    IdentifyType (filename, parambuffer);
-                    IF parambuffer[0] <> Nul THEN
-                        message := "Content-Type: ";
-                        Strings.Append (parambuffer, message);
-                        PutAndLogLine (S, ID, message, FALSE);
-                    END (*IF*);
-
                     PutAndLogLine (S, ID, "", FALSE);
 
                     IF IncludeBody THEN
                         SendFile (S, filename);
+                        IF mustdelete THEN
+                            DeleteFile (filename);
+                        END (*IF*);
                     ELSE
                         size := Zero64;
                     END (*IF*);
@@ -621,18 +602,7 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
         ELSE
             (* File not found, cannot satisfy request. *)
 
-            PutAndLogLine (S, ID, "HTTP/1.1 404 Not Found", TRUE);
-            message := "Date: ";
-            CurrentDateAndTimeGMT (parambuffer);
-            Strings.Append (parambuffer, message);
-            PutAndLogLine (S, ID, message, FALSE);
-            PutAndLogLine (S, ID, "Content-Type: text/plain", FALSE);
-            PutAndLogLine (S, ID, "Content-Length: 15", FALSE);
-            PutAndLogLine (S, ID, "", FALSE);
-            PutAndLogLine (S, ID, "404 Not Found", FALSE);
-            IF CommonLogEnabled THEN
-                MakeCommonLogEntry (sess, "404", CARD64{15,0});
-            END (*IF*);
+            NotFoundResponse (sess);
 
         END (*IF*);
 
@@ -640,52 +610,6 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
 
 (************************************************************************)
 (*                  PARSING THE HEADER OF A REQUEST                     *)
-(************************************************************************)
-
-PROCEDURE SkipLeadingSpaces (VAR (*INOUT*) buffer: ARRAY OF CHAR);
-
-    (* Deletes any leading space characters in buffer. *)
-
-    VAR j: CARDINAL;
-
-    BEGIN
-        j := 0;
-        WHILE (j <= HIGH(buffer)) AND (buffer[j] = Space) DO
-            INC (j);
-        END (*WHILE*);
-        IF j > 0 THEN
-            Strings.Delete (buffer, 0, j);
-        END (*IF*);
-    END SkipLeadingSpaces;
-
-(************************************************************************)
-
-PROCEDURE MatchLeading (VAR (*IN*) buffer: ARRAY OF CHAR;
-                                            head: ARRAY OF CHAR): BOOLEAN;
-
-    (* Returns TRUE iff head is a leading substring of buffer, modulo   *)
-    (* alphabetic case.  If we have a match, strips out head from       *)
-    (* buffer, as well as any following space characters.               *)
-
-    VAR j: CARDINAL;
-
-    BEGIN
-        j := 0;
-        LOOP
-            IF (j > HIGH(head)) OR (j > HIGH(buffer)) OR (head[j] = Nul) THEN
-                WHILE (j <= HIGH(buffer)) AND (buffer[j] = Space) DO
-                    INC (j);
-                END (*WHILE*);
-                Strings.Delete (buffer, 0, j);
-                RETURN TRUE;
-            ELSIF CAP(buffer[j]) <> CAP(head[j]) THEN
-                RETURN FALSE;
-            ELSE
-                INC (j);
-            END (*IF*);
-        END (*LOOP*);
-    END MatchLeading;
-
 (************************************************************************)
 
 PROCEDURE ParseParameters (sess: Session);
@@ -943,7 +867,6 @@ PROCEDURE LoadReqINIData (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
 
     BEGIN
         DetailedLogging := ReloadLoggingINIData(INIname, UseTNI);
-        LoadMIMETable (INIname, UseTNI);
         UpdateDomainList (INIname, UseTNI);
     END LoadReqINIData;
 
@@ -965,12 +888,9 @@ BEGIN
     CRLF[0] := CR;  CRLF[1] := LF;
     DetailedLogging := FALSE;
     LogCtx := OpenLogContext();
-    NextName := "00000000";
-    CreateLock (NextNameLock);
     CreateLock (CommonLogLock);
 FINALLY
     CloseLogContext (LogCtx);
     DestroyLock (CommonLogLock);
-    DestroyLock (NextNameLock);
 END Requests.
 

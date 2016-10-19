@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server session manager                                            *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2016   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE WSession;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        29 April 2015                   *)
+        (*  Last edited:        18 August 2016                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -249,8 +249,6 @@ PROCEDURE TimeoutChecker;
                 so_cancel (p^.socket);
             END (*IF*);
             p^.socket := NotASocket;
-        ELSE
-            LogTransactionL (LogID, "Session terminated without timing out");
         END (*IF*);
         Sleep(50);     (* Let session close socket itself *)
 
