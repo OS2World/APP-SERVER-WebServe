@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE Domains;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            3 April 2015                    *)
-        (*  Last edited:        9 May 2015                      *)
+        (*  Last edited:        25 August 2016                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -286,7 +286,10 @@ PROCEDURE LocateFile (D: Domain;  VAR (*IN*) URL: ARRAY OF CHAR;
         Strings.Assign (URL, dir);
         dir[8] := Nul;
         CGI := StringMatch (dir, "/cgi-bin");
-        IF CGI THEN
+        IF D = NIL THEN
+            filename[0] := Nul;  size.low := 0;  size.high := 0;  SHTML := FALSE;
+            RETURN FALSE;
+        ELSIF CGI THEN
             dir := D^.CGIDir;
             Strings.Delete (URL, 0, 8);
 

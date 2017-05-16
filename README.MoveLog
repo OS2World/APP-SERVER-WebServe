@@ -1,0 +1,53 @@
+MoveLog.cmd    Move Webserve.log and Common.log to a LOGS subdirectory
+
+WHAT IS IT?
+
+This is a Rexx script that will rename the two WebServe log files,
+if they exist, to names of the form dddddddd.webservelog and
+dddddddd.common.log, where 'dddddddd' is the current date, and then
+move them to a subdirectory called LOGS.  (It's your responsibility
+to create that subdirectory.) If you run it more than once a day, the
+file names are modified to ensure uniqueness.
+
+To get the best use of this, you need to run it periodically, e.g.
+once a day or once a week.  The script does not itself contain
+provisions for periodic running, but there are plenty of ways (see
+below) to make it run periodically using readily available software.
+
+
+INSTALLATION
+
+1. Make sure that the file 'movelog.cmd' is in the WebServe main
+directory, i.e. the directory that contains webserve.exe,
+and create a subdirectory called LOGS under that directory.
+
+2. Arrange to run the script 'movelog.cmd' periodically, e.g. once
+per month.  I haven't made this automatic since different people have
+different preferences about how to schedule periodic jobs.
+
+My own preference is to use the scheduler that comes with DragText.
+(Or, to be precise, with the DTProgram option that is distributed with
+DragText.)  If you want to do that, the method is:
+ (a) Right mouse click on any *.exe file and choose the 'create
+     program object' option.  Put the program object anywhere you like,
+     and give it a suitable name.
+ (b) Open the properties notebook of this program object, and fill
+     it in as follows
+       Path and file name: movelog.cmd
+       Working directory: the WebServe main directory
+     On the 'Session' page, you probably want 'start minimized'.
+     On the 'Schedule' page: select the options 'repeat' and 'first'
+       and 'day of the month' (or your choice of frequency).
+       Adjust the date and time to be when you want the first save
+       to take place, and then select the 'Open on schedule' button.
+
+If the Properties notebook doesn't have any 'Schedule' page, it means
+that you don't have DTProgram installed.  To get it, look for the latest
+version of DragText at http://hobbes.nmsu.edu/pub/os2/util/wps/ or
+at http://e-vertise.com/dragtext/.
+
+This is just one of the several ways to do periodic scheduling.
+Some other desktop utilities have a similar feature.  If you're a fan
+of unix-like utilities, you'll find several 'cron' utilities at
+http://hobbes.nmsu.edu/pub/os2/util/schedule/.
+

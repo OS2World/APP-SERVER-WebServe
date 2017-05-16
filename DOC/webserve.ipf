@@ -20,7 +20,7 @@ but no comparative timing tests have been done.
 It is distributed as open-source freeware subject to the GNU GPL
 licence. The source code is included in the zip file.
 
-:p.This documentation is for version 1.5.
+:p.This documentation is for version 1.6.
 
 :p.
 :hp2.Disclaimer of Warranty:ehp2.
@@ -439,6 +439,10 @@ how much detail is sent to the transaction log. If it is enabled, we log
 not only the requests and responses, but also the parameters that go with those
 requests and responses.
 
+:p.Logging can produce large log files. It is a good idea to move the log files
+to an archive, or even delete them, periodically. To see how to do this, read
+the file README.MoveLog in the WebServe distribution.
+
 .***********************************
 .*   MIME
 .***********************************
@@ -521,10 +525,16 @@ alternative.
 have a domain name yourdomain.com, and then specify *.yourdomain.com as
 an alternative name.
 
+:p.To complete specifying the properties of the domain, you must specify
+:ul.
+:li.:link reftype=hd refid=htmlroot.The HTML root:elink..
+:li.:link reftype=hd refid=CGIDir.The CGI directory:elink..
+:eul.
+
 :p.Any changes you make will come into effect once you close the Setup program.
 It is not necessary to restart WebServe.
 
-:h2.The HTML root
+:h2 id=htmlroot.The HTML root
 :hp2.The HTML root:ehp2.
 
 :p.Every domain must have an HTML root directory. This is where the HTML
@@ -537,6 +547,68 @@ starts either with a drive letter or a '/'. If instead you specify a relative
 path, it will be relative to the directory that holds WebServe.exe. Specifying a
 relative path is usually not a good idea. It is better to keep the HTML files
 separate from the WebServe executable.
+
+:p.When a web client is browsing a domain, it will most probably first try to
+fetch the directory "/". Some web servers will return a directory listing in
+the case where a directory rather than a file name is specified, but WebServe
+considers that to be a security breach. Instead, it will search for files
+named "index.shtml", "index.html", "index.htm", in that order, and choose the
+first one that is found. The same rule applies for every URL that ends with a
+"/", which of course means that you can have index.html files at each level of
+your site hierarchy. If none of these files is found, the server will return a
+:link reftype=hd refid=404."404 not found":elink.response.
+
+:p.The assumption, of course, is that every resource in a domain can be found,
+directly or indirectly, by following links from the index file(s). You are,
+of course, free to create "secret" web pages that cannot be found by following
+links. Those pages can still be accessed if you tell someone to go directly to
+the relevant URL.
+
+:h3 id=robots.robots.txt
+:hp2.Robots:ehp2.
+
+:p.It is desirable, but not compulsory, to have a file "robots.txt" in the HTML
+root directory of every domain. This is to tell web crawlers - i.e. software that
+is trying to index your web site, to collect data for search engines - which
+files they may or may not visit. An example robots.txt file might contain the lines
+
+:xmp.
+User-agent: msnbot/*
+Disallow: /
+
+User-agent: *
+Disallow: /cgi-bin/
+Disallow: *.zip
+:exmp.
+
+:p.The first two lines say that the web crawler called "msnbot" is not allowed to
+access anything on this site. The remaining lines say that any other crawler is
+denied access to all cgi-bin files and all zip files. (This is more for efficiency than
+anything else, although there is also a privacy aspect. There is not much point in
+having a search engine index all of your zip files.)
+
+:p.To learn the rules for creating robots.txt files, visit
+http&colon.//www.robotstxt.org/
+
+
+:h3 id=404.404 Not Found
+:hp2.404 Not Found:ehp2.
+
+:p.As part of every HTTP transaction, the server returns a three-digit (decimal)
+code to indicate success or failure. The most common failure code is 404, which
+means "file not found", so it is worth treating this as a special case.
+
+:p.In principle, a "file not found" condition should occur only when you have
+faulty links in your web pages. In practice, however, the "not found" condition
+is very common because of malicious web crawlers that are trying to find
+security holes in your server.
+
+:p.If a file is not found, WebServe will try to find a file whose name is of the
+form "/404*.html", where the "*" indicates any arbitrary character string. An
+example file "404 NotFound.html" is included in the WebServe distribution; if you
+want to use it, copy it into the HTML root directory for each domain. You are of
+course free to edit or replace that file. If a file
+matching this pattern is not found, WebServe will return a more basic text file.
 
 :h2 id=CGIDir.The CGI directory
 :hp2.The CGI directory:ehp2.
@@ -552,9 +624,12 @@ executable. This form of URL asks for an executable program or script to
 be executed, and the result sent back as a text file to the client.
 
 :p.These CGI applications must be kept in the CGI directory for this domain,
-or a subdirectory of the CGI directory. It is, however, possible to write a
+or a subdirectory of the CGI directory. It is possible to write a
 CGI application in such a way that it invokes other scripts or executables
-elsewhere in the file system.
+elsewhere in the file system, but before doing this you should consider
+the possible security implications. The whole point of having a CGI directory
+is to have a "sandbox" where CGI applications do not leak out into the
+wider file system.
 
 :p.You may specify the CGI directory as an absolute path or a relative path.
 If you specify a relative path, it is relative to the HTML root directory
@@ -627,8 +702,9 @@ to be passed to the script.
 :p.Obviously it would be unsafe to allow the execution of any arbitrary script,
 so we impose the rule that all such scripts must be in the
 :link reftype=hd refid=CGIDir.CGI directory:elink.
-for this domain, or a subdirectory of that directory. (The scripts may, however,
-call programs outside that directory.) It would still be possible to write
+for this domain, or a subdirectory of that directory. (The scripts may
+call programs outside that directory, but if so you must ask yourself whether
+that would create a security hole.) It would still be possible to write
 scripts that violate the server's security, but now the security is under the
 control of the web site owner, who is presumably the only person able to put
 scripts in the CGI directory.

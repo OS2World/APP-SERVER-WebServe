@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE WSession;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        18 August 2016                  *)
+        (*  Last edited:        30 August 2016                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -120,7 +120,7 @@ TYPE
                                TimedOut: BOOLEAN;
                                sem: Semaphore;
                                socket: Socket;
-                               session: Session;
+                               (*session: Session;*)
                                SessionID: SevenChar;
                            END (*RECORD*);
 
@@ -236,7 +236,7 @@ PROCEDURE TimeoutChecker;
         p^.WatchdogRunning := TRUE;
         p^.SessionID[0] := 'W';
         LogID := CreateLogID (LContext(), p^.SessionID);
-        LogTransactionL (LogID, "Watchdog timer started");
+        (*LogTransactionL (LogID, "Watchdog timer started");*)
         REPEAT
             Obtain (MaxTimeLock);
             TimeLimit := MaxTime;
@@ -244,11 +244,11 @@ PROCEDURE TimeoutChecker;
             TimedWaitSpecial (p^.sem, TimeLimit, p^.TimedOut);
         UNTIL p^.TimedOut OR p^.dying;
         IF p^.TimedOut THEN
-            LogTransactionL (LogID, "Timeout, cancelling client socket");
+            (*LogTransactionL (LogID, "Timeout, cancelling client socket");*)
             IF p^.socket <> NotASocket THEN
                 so_cancel (p^.socket);
             END (*IF*);
-            p^.socket := NotASocket;
+            (*p^.socket := NotASocket;*)
         END (*IF*);
         Sleep(50);     (* Let session close socket itself *)
 
@@ -267,7 +267,7 @@ PROCEDURE TimeoutChecker;
             IF p^.SocketOpen THEN
                 LogTransactionL (LogID, "Still trying to cancel client socket");
                 so_cancel (p^.socket);
-                p^.socket := NotASocket;
+                (*p^.socket := NotASocket;*)
             END (*IF*);
             INC (KillCount);
 
@@ -278,7 +278,7 @@ PROCEDURE TimeoutChecker;
 
         END (*WHILE*);
 
-        LogTransactionL (LogID, "Watchdog timer closing");
+        (*LogTransactionL (LogID, "Watchdog timer closing");*)
         DiscardLogID (LogID);
 
         (* Note that the KeepAlive record still exists.  We leave it    *)
@@ -376,7 +376,7 @@ PROCEDURE SessionHandler (arg: ADDRESS);
         END (*IF*);
 
         CreateSemaphore (KeepAliveSemaphore, 0);
-        sess := OpenSession (S, LogID);
+        sess := OpenSession (S, LogID, KeepAliveSemaphore);
 
         (* Create an instance of the TimeoutChecker task. *)
 
@@ -386,7 +386,6 @@ PROCEDURE SessionHandler (arg: ADDRESS);
             WatchdogRunning := TRUE;
             dying := FALSE;
             sem := KeepAliveSemaphore;
-            session := sess;
             SessionID := SessionNumber;
             TimedOut := FALSE;
         END (*WITH*);
@@ -421,12 +420,6 @@ PROCEDURE SessionHandler (arg: ADDRESS);
             LogTransactionL (LogID, "Communication failure");
         END (*IF*);
 
-        (* Note potential race condition.  When we close the session,   *)
-        (* sess is NIL but the watchdog thread also has a copy of this  *)
-        (* pointer.  It's important to clear the copy so that the       *)
-        (* watchdog does not try to use an obsolete pointer.            *)
-
-        KA^.session := NIL;
         CloseSession (sess);
         KA^.dying := TRUE;  Signal (KA^.sem);
         EVAL(soclose(S));

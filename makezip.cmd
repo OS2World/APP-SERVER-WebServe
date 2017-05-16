@@ -59,6 +59,8 @@ mkdir doc
 'copy ..\WebServe.map'
 'copy ..\Setup.exe'
 'copy ..\setup.*.lng'
+'copy ..\movelog.cmd'
+'copy ..\README.MoveLog'
 'copy ..\makezip.cmd'
 'copy ..\version.cmd'
 'copy ..\bldlvl.cmd'

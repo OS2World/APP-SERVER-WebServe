@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE Requests;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        14 August 2016                  *)
+        (*  Last edited:        30 August 2016                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -91,6 +91,10 @@ FROM TransLog IMPORT
     (* proc *)  OpenLogContext, CloseLogContext,
                 StartTransactionLogging, SetProcname, SetSyslogHost;
 
+FROM Semaphores IMPORT
+    (* type *)  Semaphore,
+    (* proc *)  Signal;
+
 FROM TaskControl IMPORT
     (* type *)  Lock,
     (* proc *)  CreateLock, DestroyLock, Obtain, Release;
@@ -146,6 +150,7 @@ TYPE
                   RECORD
                       LogID: TransactionLogID;
                       socket: Socket;
+                      KeepAlive: Semaphore;
                       instream: IStream;
                       domain: Domain;
                       acceptlanguage: ARRAY [0..255] OF CHAR;
@@ -300,16 +305,17 @@ PROCEDURE PutAndLogLine (S: Socket;  LogID: TransactionLogID;
 
 (************************************************************************)
 
-PROCEDURE PutFile (S: Socket; id: ChanId);
+PROCEDURE PutFile (sess: Session;  id: ChanId);
 
     (* Sends from an already-opened file. *)
 
     CONST BufferSize = 65536;
 
     VAR BuffPtr: POINTER TO ARRAY [0..BufferSize-1] OF LOC;
-        xferred: CARDINAL;  success: BOOLEAN;
+        S: Socket;  xferred: CARDINAL;  success: BOOLEAN;
 
     BEGIN
+        S := sess^.socket;
         NEW (BuffPtr);
         success := TRUE;
         LOOP
@@ -317,6 +323,7 @@ PROCEDURE PutFile (S: Socket; id: ChanId);
             IF xferred = 0 THEN
                 EXIT(*LOOP*)
             END (*IF*);
+            Signal (sess^.KeepAlive);
             IF WaitForSocketOut (S, MAX(CARDINAL)) > 0 THEN
                 xferred := send (S, BuffPtr^, xferred, 0);
             ELSE
@@ -334,16 +341,16 @@ PROCEDURE PutFile (S: Socket; id: ChanId);
 
 (************************************************************************)
 
-PROCEDURE SendFile (S: Socket;  VAR (*IN*) name: ARRAY OF CHAR);
+PROCEDURE SendFile (sess: Session;  VAR (*IN*) name: ARRAY OF CHAR);
 
-    (* Sends file 'name' to socket S. *)
+    (* Sends file 'name' to sess^.socket. *)
 
     VAR cid: ChanId;
 
     BEGIN
         cid := OpenOldFile (name, FALSE, FALSE);
         IF cid <> NoSuchChannel THEN
-            PutFile (S, cid);
+            PutFile (sess, cid);
             CloseFile (cid);
         END (*IF*);
     END SendFile;
@@ -352,7 +359,8 @@ PROCEDURE SendFile (S: Socket;  VAR (*IN*) name: ARRAY OF CHAR);
 (*                   OPENING AND CLOSING A SESSION                      *)
 (************************************************************************)
 
-PROCEDURE OpenSession (S: Socket;  ID: TransactionLogID): Session;
+PROCEDURE OpenSession (S: Socket;  ID: TransactionLogID;
+                            KeepAliveSem: Semaphore): Session;
 
     (* Creates the session state for a new session. *)
 
@@ -362,6 +370,7 @@ PROCEDURE OpenSession (S: Socket;  ID: TransactionLogID): Session;
         NEW (result);
         result^.LogID := ID;
         result^.socket := S;
+        result^.KeepAlive := KeepAliveSem;
         result^.instream := OpenIStream (S);
         result^.domain := NilDomain;
         result^.mustclose := FALSE;
@@ -435,7 +444,7 @@ PROCEDURE NotFoundResponse (sess: Session);
             PutAndLogLine (S, ID, message, FALSE);
             PutAndLogLine (S, ID, "", FALSE);
 
-            SendFile (S, filename);
+            SendFile (sess, filename);
 
         ELSE
             PutAndLogLine (S, ID, "Content-Type: text/plain", FALSE);
@@ -544,7 +553,7 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
                         (* header lines, plus the blank line that       *)
                         (* terminates the header.                       *)
 
-                        SendFile (S, tempfile);
+                        SendFile (sess, tempfile);
                     ELSE
                         PutAndLogLine (S, ID, "", FALSE);
                         size := Zero64;
@@ -583,7 +592,7 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
                     PutAndLogLine (S, ID, "", FALSE);
 
                     IF IncludeBody THEN
-                        SendFile (S, filename);
+                        SendFile (sess, filename);
                         IF mustdelete THEN
                             DeleteFile (filename);
                         END (*IF*);
@@ -597,7 +606,7 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
                     MakeCommonLogEntry (sess, "200", size);
                 END (*IF*);
 
-            END (*IF LocateFile*);
+            END (*IF dontsend*);
 
         ELSE
             (* File not found, cannot satisfy request. *)
@@ -737,11 +746,17 @@ PROCEDURE HandleRequest (sess: Session);
             found := GetLine (sess^.instream, Work);
         END (*IF*);
 
+        IF NOT found THEN
+
+            (* End of input. *)
+
+            sess^.mustclose := TRUE;
+            RETURN;
+        END (*IF*);
+
         (* Extract the method and URL. *)
 
-        IF found THEN
-            Strings.FindNext (' ', Work, 0, found, pos);
-        END (*IF*);
+        Strings.FindNext (' ', Work, 0, found, pos);
         IF found THEN
             Strings.Extract (Work, 0, pos, method);
             Strings.Delete (Work, 0, pos+1);

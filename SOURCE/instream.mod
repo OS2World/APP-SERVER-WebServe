@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server input stream handler                                       *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2016   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE InStream;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        29 April 2015                   *)
+        (*  Last edited:        28 August 2016                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -90,7 +90,8 @@ PROCEDURE CloseIStream (VAR (*INOUT*) stream: IStream);
 
 PROCEDURE GetLine (stream: IStream;  VAR (*OUT*) line: ARRAY OF CHAR): BOOLEAN;
 
-    (* Gets one line from the specified stream.             *)
+    (* Gets one line from the specified stream.  Returns a FALSE        *)
+    (* result, with no data, at end of stream.                          *)
 
     VAR length: CARDINAL;
 

@@ -1,5 +1,12 @@
 LIST OF CHANGES
 
+Version 1.6         (31 Aug 2016)
+   Added a movelog.cmd script.
+   Fixed: mishandling when valid domain not specified.
+   Fixed: potential timeout when sending a large file.
+   If a client sends a blank line and then closes the connection,
+      we ignore the blank line rather than replying "400 bad request".
+
 Version 1.5         (14 Aug 2016)
    Fixed a persistent "file not found" problem.
 

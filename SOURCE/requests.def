@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server session manager                                            *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2016   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ DEFINITION MODULE Requests;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        29 April 2015                   *)
+        (*  Last edited:        30 August 2016                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -36,6 +36,9 @@ DEFINITION MODULE Requests;
 
 FROM Sockets IMPORT
     (* type *)  Socket;
+
+FROM Semaphores IMPORT
+    (* type *)  Semaphore;
 
 FROM TransLog IMPORT
     (* type *)  LogContext, TransactionLogID;
@@ -52,7 +55,8 @@ PROCEDURE LoadReqINIData (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
 
     (* Loads INI data needed to handle requests. *)
 
-PROCEDURE OpenSession (S: Socket;  ID: TransactionLogID): Session;
+PROCEDURE OpenSession (S: Socket;  ID: TransactionLogID;
+                            KeepAliveSem: Semaphore): Session;
 
     (* Creates the session state for a new session. *)
 
