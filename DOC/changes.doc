@@ -1,5 +1,21 @@
 LIST OF CHANGES
 
+Version 1.8         (10 Mar 2018)
+    Implemented CGI POST, with minimal testing.
+    Added script ShutWS.cmd to distribution.
+    Fixed: CTRL/C sometimes did not shut down program.
+
+Version 1.7         (27 Jan 2018)
+    Added an option to put hostnames rather than IP
+       addresses in the logs.
+    Changed the watchdog operation to use fewer threads.
+    Reduced the default limit on simultaneous connections.
+
+Version 1.61        (27 Oct 2016)
+   Fixed: if the Request-URI is an absoluteURI, then the
+      Host parameter in the request must be ignored.
+   Added a "setting the time zone" page to the manual.
+
 Version 1.6         (31 Aug 2016)
    Added a movelog.cmd script.
    Fixed: mishandling when valid domain not specified.

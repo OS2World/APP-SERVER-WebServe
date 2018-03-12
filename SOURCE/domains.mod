@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server session manager                                            *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2017   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE Domains;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            3 April 2015                    *)
-        (*  Last edited:        25 August 2016                  *)
+        (*  Last edited:        26 January 2018                 *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -36,11 +36,9 @@ IMPLEMENTATION MODULE Domains;
 
 IMPORT Strings, INIData;
 
-FROM Types IMPORT
+FROM Arith64 IMPORT
+    (* const*)  Zero64,
     (* type *)  CARD64;
-
-FROM LONGLONG IMPORT
-    (* const*)  Zero64;
 
 FROM Names IMPORT
     (* type *)  FilenameString, DomainName, HostName;
@@ -52,7 +50,7 @@ FROM TaskControl IMPORT
     (* type *)  Lock,
     (* proc *)  CreateLock, DestroyLock, Obtain, Release;
 
-FROM Inet2Misc IMPORT
+FROM MiscFuncs IMPORT
     (* proc *)  StringMatch;
 
 FROM WildCard IMPORT

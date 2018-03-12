@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server session manager                                            *)
-(*  Copyright (C) 2016   Peter Moylan                                     *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE WSession;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        30 August 2016                  *)
+        (*  Last edited:        7 March 2018                    *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -61,30 +61,29 @@ FROM Conversions IMPORT
 FROM TaskControl IMPORT
     (* type *)  Lock,
     (* proc *)  CreateLock, DestroyLock, Obtain, Release,
-                CreateTask, CreateTask1, TaskExit;
+                NotDetached, CreateTask1, TaskExit;
+
+FROM NameLookup IMPORT
+    (* proc *)  StartNameLookup, GetName, CancelNameLookup;
 
 FROM Timer IMPORT
     (* proc *)  Sleep, TimedWaitSpecial;
 
-FROM Semaphores IMPORT
-    (* type *)  Semaphore,
-    (* proc *)  CreateSemaphore, DestroySemaphore, Signal;
+FROM MiscFuncs IMPORT
+    (* proc *)  ConvertCardRJ, AppendCard;
 
-FROM Queues IMPORT
-    (* type *)  Queue,
-    (* proc *)  CreateQueue, DestroyQueue, AddToQueue, TakeFromQueue;
-
-FROM InetUtilities IMPORT
-    (* proc *)  ConvertCardRJ, AppendCard, IPToString;
-
-FROM SplitScreen IMPORT
-    (* proc *)  NotDetached;
+FROM Inet2Misc IMPORT
+    (* proc *)  IPToString;
 
 FROM TransLog IMPORT
     (* type *)  TransactionLogID,
     (* proc *)  StartTransactionLogging,
                 CreateLogID, DiscardLogID, LogTransaction, LogTransactionL,
                 UpdateTopScreenLine;
+
+FROM Watchdog IMPORT
+    (* type *)  WatchdogID,
+    (* proc *)  AddToWatches, KickWatchdog, RemoveFromWatches;
 
 FROM Requests IMPORT
     (* type *)  Session,
@@ -96,7 +95,6 @@ CONST
     SessionPriority = 3;
     NilLogID = CAST(TransactionLogID, NIL);
     NilSession = CAST(Session, NIL);
-    NilSemaphore = CAST(Semaphore, NIL);
 
 TYPE
     (* String form of a session identifier. *)
@@ -111,25 +109,19 @@ TYPE
                                IPAddress: CARDINAL;
                            END (*RECORD*);
 
-    (* Data needed by the timeout checker task. *)
+    (* Data needed in timeout processing. *)
 
-    KeepAlivePointer = POINTER TO
-                           RECORD
-                               SocketOpen, dying: BOOLEAN;
-                               WatchdogRunning: BOOLEAN;
-                               TimedOut: BOOLEAN;
-                               sem: Semaphore;
-                               socket: Socket;
-                               (*session: Session;*)
-                               SessionID: SevenChar;
-                           END (*RECORD*);
+    SocketStatePointer = POINTER TO SocketStateRecord;
+    SocketStateRecord = RECORD
+                            ID: WatchdogID;
+                            socket: Socket;
+                            SocketOpen, TimedOut: BOOLEAN;
+                        END (*RECORD*);
+
+CONST
+    Nul = CHR(0);
 
 VAR
-    (* A queue of KeepAlive records, which are passed to the    *)
-    (* TimeoutChecker tasks as they are created.                *)
-
-    KeepAliveQueue: Queue;
-
     (* Timeout delay, in milliseconds, and its mutual exclusion lock. *)
 
     MaxTime: CARDINAL;
@@ -145,9 +137,13 @@ VAR
     ClientCount: CARDINAL;
     ClientCountLock: Lock;
 
-    (* Flag to control whether we write the number of clients to the screen. *)
+    (* Flag to control whether we write to the screen. *)
 
     LogToScreen: BOOLEAN;
+
+    (* Option to show hostnames instead of IP addresses in the logs. *)
+
+    ResolveIP: BOOLEAN;
 
 (************************************************************************)
 (*                 CLOSING A SOCKET, WITH ERROR CHECK                   *)
@@ -188,7 +184,7 @@ PROCEDURE UpdateCount (increment: INTEGER): CARDINAL;
         ELSIF increment < 0 THEN DEC (ClientCount, -increment)
         END (*IF*);
         value := ClientCount;
-        IF value > MaxClients THEN
+        IF (value > MaxClients) AND (increment > 0) THEN
             DEC (ClientCount, increment);  value := 0;
         ELSIF LogToScreen THEN
             pos := 0;
@@ -212,81 +208,32 @@ PROCEDURE NumberOfClients(): CARDINAL;
     END NumberOfClients;
 
 (************************************************************************)
-(*                         THE WATCHDOG TIMER                           *)
+(*                          THE TIMEOUT HANDLER                         *)
 (************************************************************************)
 
-PROCEDURE TimeoutChecker;
+PROCEDURE TimeoutHandler (arg: ADDRESS);
 
-    (* A new instance of this task is created for each client session.  *)
-    (* It kills the corresponding SessionHandler task if more than      *)
-    (* MaxTime milliseconds have passed since the last Signal() on the  *)
-    (* sessions KeepAlive semaphore.                                    *)
+    (* This is called from the Watchdog module, which is telling us     *)
+    (* that the session specified by arg has timed out.  We respond by  *)
+    (* cancelling the main socket for this session.  That will cause a  *)
+    (* failure of the input operation in the SessionHandler task, at    *)
+    (* which point that task will discover the TimedOut flag is set.    *)
 
-    (* This is a workaround.  I would have preferred to set the         *)
-    (* timeout in the socket options, but I haven't yet figured out     *)
-    (* how to do it.  An older version of IBM's sockets documentation   *)
-    (* gave details on the send and receive timeouts, but this seems    *)
-    (* to have disappeared from later versions of the documentation.    *)
-
-    VAR p: KeepAlivePointer;  LogID: TransactionLogID;
-        TimeLimit, KillCount: CARDINAL;
+    VAR q: SocketStatePointer;
 
     BEGIN
-        p := TakeFromQueue (KeepAliveQueue);
-        p^.WatchdogRunning := TRUE;
-        p^.SessionID[0] := 'W';
-        LogID := CreateLogID (LContext(), p^.SessionID);
-        (*LogTransactionL (LogID, "Watchdog timer started");*)
-        REPEAT
-            Obtain (MaxTimeLock);
-            TimeLimit := MaxTime;
-            Release (MaxTimeLock);
-            TimedWaitSpecial (p^.sem, TimeLimit, p^.TimedOut);
-        UNTIL p^.TimedOut OR p^.dying;
-        IF p^.TimedOut THEN
-            (*LogTransactionL (LogID, "Timeout, cancelling client socket");*)
-            IF p^.socket <> NotASocket THEN
-                so_cancel (p^.socket);
-            END (*IF*);
-            (*p^.socket := NotASocket;*)
+        q := arg;
+        q^.TimedOut := TRUE;
+        IF q^.SocketOpen THEN
+            so_cancel (q^.socket);
+            q^.socket := NotASocket;
+            q^.SocketOpen := FALSE;
         END (*IF*);
-        Sleep(50);     (* Let session close socket itself *)
 
-        (* Wait for the socket to be closed. *)
+        (* Do not dispose of the q^ record, because the associated  *)
+        (* service thread will want to inspect q^.TimedOut.         *)
 
-        IF p^.SocketOpen THEN
-            LogTransactionL (LogID, "Waiting for client socket to be closed");
-        END (*IF*);
-        KillCount := 0;
-        WHILE p^.SocketOpen DO
-            Sleep (5000);
-
-            (* For the really stubborn cases, keep trying to cancel *)
-            (* the sockets.                                         *)
-
-            IF p^.SocketOpen THEN
-                LogTransactionL (LogID, "Still trying to cancel client socket");
-                so_cancel (p^.socket);
-                (*p^.socket := NotASocket;*)
-            END (*IF*);
-            INC (KillCount);
-
-            IF KillCount >= 10 THEN
-                LogTransactionL (LogID, "Unable to cancel client socket, giving up");
-                p^.SocketOpen := FALSE;
-            END (*IF*);
-
-        END (*WHILE*);
-
-        (*LogTransactionL (LogID, "Watchdog timer closing");*)
-        DiscardLogID (LogID);
-
-        (* Note that the KeepAlive record still exists.  We leave it    *)
-        (* up to the client thread to discard it.                       *)
-
-        p^.WatchdogRunning := FALSE;
-
-    END TimeoutChecker;
+    END TimeoutHandler;
 
 (************************************************************************)
 (*                       CLIENT SESSION HANDLER                         *)
@@ -302,26 +249,22 @@ PROCEDURE SessionHandler (arg: ADDRESS);
         LogID: TransactionLogID;
         ClientNumber: CARDINAL;
         sess: Session;
-        KeepAliveSemaphore: Semaphore;
-        KA: KeepAlivePointer;
+        KB: SocketStatePointer;
 
     (********************************************************************)
 
     PROCEDURE AbandonSession;
 
-        (* Release resources and exit on premature session close.  It's *)
-        (* less error-prone to handle the resource release at a single  *)
-        (* point.                                                       *)
+        (* Release resources and exit on session close.  It's less      *)
+        (* error-prone to handle the resource release at a single point.*)
 
         BEGIN
             IF sess <> NilSession THEN
                 CloseSession (sess);
             END (*IF*);
-            IF KeepAliveSemaphore <> NilSemaphore THEN
-                DestroySemaphore (KeepAliveSemaphore);
-            END (*IF*);
-            IF KA <> NIL THEN
-                DISPOSE (KA);
+            IF KB <> NIL THEN
+                RemoveFromWatches (KB^.ID, TRUE);
+                DISPOSE (KB);
             END (*IF*);
             IF S <> NotASocket THEN
                 EVAL(soclose(S));
@@ -338,8 +281,8 @@ PROCEDURE SessionHandler (arg: ADDRESS);
     (********************************************************************)
 
     VAR NSP: NewSessionPointer;
-        IPAddress: CARDINAL;
-        IPBuffer: ARRAY [0..16] OF CHAR;
+        IPAddress, T: CARDINAL;
+        NameBuffer: ARRAY [0..511] OF CHAR;
         SessionNumber: SevenChar;
         LogMessage: ARRAY [0..127] OF CHAR;
         EndSession, success: BOOLEAN;
@@ -352,8 +295,7 @@ PROCEDURE SessionHandler (arg: ADDRESS);
         DISPOSE (NSP);
 
         sess := NIL;
-        KeepAliveSemaphore := NilSemaphore;
-        KA := NIL;
+        KB := NIL;
 
         (* Create the log file ID for this session. *)
 
@@ -362,9 +304,15 @@ PROCEDURE SessionHandler (arg: ADDRESS);
 
         (* Initial transaction log message. *)
 
-        IPToString (IPAddress, TRUE, IPBuffer);
+        NameBuffer[0] := Nul;
+        IF ResolveIP THEN
+            GetName (IPAddress, NameBuffer, TRUE);
+        END (*IF*);
+        IF NameBuffer[0] = Nul THEN
+            IPToString (IPAddress, TRUE, NameBuffer);
+        END (*IF*);
         Strings.Assign ("New client ", LogMessage);
-        Strings.Append (IPBuffer, LogMessage);
+        Strings.Append (NameBuffer, LogMessage);
         LogTransaction (LogID, LogMessage);
 
         (* Check for too many clients. *)
@@ -375,36 +323,29 @@ PROCEDURE SessionHandler (arg: ADDRESS);
             AbandonSession;
         END (*IF*);
 
-        CreateSemaphore (KeepAliveSemaphore, 0);
-        sess := OpenSession (S, LogID, KeepAliveSemaphore);
+        (* Register us with the watchdog.  *)
 
-        (* Create an instance of the TimeoutChecker task. *)
-
-        NEW (KA);
-        WITH KA^ DO
+        NEW (KB);
+        WITH KB^ DO
             SocketOpen := TRUE;  socket := S;
-            WatchdogRunning := TRUE;
-            dying := FALSE;
-            sem := KeepAliveSemaphore;
-            SessionID := SessionNumber;
             TimedOut := FALSE;
         END (*WITH*);
+        Obtain (MaxTimeLock);
+        T := MaxTime;
+        Release (MaxTimeLock);
+        KB^.ID := AddToWatches (T, TimeoutHandler, KB);
 
-        IF CreateTask (TimeoutChecker, SessionPriority+2, "WebServe timeout") THEN
-            AddToQueue (KeepAliveQueue, KA);
-        ELSE
-            LogTransactionL (LogID, "Failed to create watchdog thread");
-            AbandonSession;
-        END (*IF*);
+        (* Open the session. *)
+
+        sess := OpenSession (S, LogID, NameBuffer, KB^.ID);
 
         (* Here's the main command processing loop.  We leave it when   *)
         (* the client issues a QUIT command, or when socket             *)
-        (* communications are lost, or when we get a timeout on the     *)
-        (* KeepAlive semaphore.                                         *)
+        (* communications are lost, or when we get a watchdog timeout.  *)
 
         EndSession := FALSE;
         REPEAT
-            Signal (KA^.sem);
+            KickWatchdog (KB^.ID);
             success := HandleOneRequest(sess, EndSession);
         UNTIL EndSession OR NOT success;
         CloseSession (sess);
@@ -412,7 +353,7 @@ PROCEDURE SessionHandler (arg: ADDRESS);
         (* Work out whether the session was terminated deliberately,    *)
         (* or by a timeout or communications failure.                   *)
 
-        IF KA^.TimedOut THEN
+        IF (KB <> NIL) AND KB^.TimedOut THEN
             LogTransactionL (LogID, "Timed out");
         ELSIF EndSession THEN
             LogTransactionL (LogID, "Session terminated");
@@ -421,13 +362,9 @@ PROCEDURE SessionHandler (arg: ADDRESS);
         END (*IF*);
 
         CloseSession (sess);
-        KA^.dying := TRUE;  Signal (KA^.sem);
         EVAL(soclose(S));
-        KA^.SocketOpen := FALSE;
-        WHILE KA^.WatchdogRunning DO
-            Signal (KA^.sem);
-            Sleep (500);
-        END (*WHILE*);
+        S := NotASocket;
+        KB^.SocketOpen := FALSE;
         AbandonSession;
 
     END SessionHandler;
@@ -450,8 +387,14 @@ PROCEDURE NewSession (S: Socket;  addr: SockAddr;
         WITH NSP^ DO
             socket := S;  IPAddress := addr.in_addr.addr;
         END (*WITH*);
+        IF ResolveIP THEN
+            StartNameLookup (NSP^.IPAddress);
+        END (*IF*);
         success := CreateTask1 (SessionHandler, SessionPriority, "WebServe session", NSP);
         IF NOT success THEN
+            IF ResolveIP THEN
+                CancelNameLookup (NSP^.IPAddress);
+            END (*IF*);
             CloseSocket (S, LogID);
             DISPOSE (NSP);
         END (*IF*);
@@ -462,10 +405,10 @@ PROCEDURE NewSession (S: Socket;  addr: SockAddr;
 (*                                  INITIALISATION                              *)
 (********************************************************************************)
 
-PROCEDURE SetSessionParameters (MaxSessions, seconds: CARDINAL);
+PROCEDURE SetSessionParameters (MaxSessions, seconds: CARDINAL;  lookuphosts: BOOLEAN);
 
-    (* Sets the maximum number of sessions allowed in parallel, and the time    *)
-    (* before an idle session times out.                                        *)
+    (* Sets the maximum number of sessions allowed in parallel, the time before *)
+    (* an idle session times out, and whether we should look up client hostnames.*)
 
     BEGIN
         Obtain (ClientCountLock);
@@ -478,25 +421,20 @@ PROCEDURE SetSessionParameters (MaxSessions, seconds: CARDINAL);
             MaxTime := 1000*seconds;
         END (*IF*);
         Release (MaxTimeLock);
+        ResolveIP := lookuphosts;
     END SetSessionParameters;
 
 (********************************************************************************)
 
 BEGIN
+    ResolveIP := FALSE;
     CreateLock (MaxTimeLock);
     CreateLock (ClientCountLock);
     Obtain (ClientCountLock);  ClientCount := 0;  Release (ClientCountLock);
-    CreateQueue (KeepAliveQueue);
     MaxClients := 10;
     LogToScreen := NotDetached();
     IF LogToScreen THEN
         UpdateTopScreenLine (69, "0 clients");
     END (*IF*);
-FINALLY
-    DestroyLock (MaxTimeLock);
-    DestroyLock (ClientCountLock);
-
-    (* Don't destroy KeepAliveQueue because timeout checker might still be running. *)
-
 END WSession.
 

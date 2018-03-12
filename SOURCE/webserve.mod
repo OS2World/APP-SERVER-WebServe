@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  The WebServe web server                                               *)
-(*  Copyright (C) 2016   Peter Moylan                                     *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ MODULE WebServe;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        1 August 2016                   *)
+        (*  Last edited:        10 March 2018                   *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (*     The relevant standard is RFC2616                 *)
@@ -41,7 +41,7 @@ MODULE WebServe;
 (*                                                                      *)
 (*      Cannot operate as a proxy.                                      *)
 (*      Have not checked whether it works with HTTP/1.0 client.         *)
-(*      Only requests handled are GET and HEAD.                         *)
+(*      Only requests handled are GET, HEAD, and POST.                  *)
 (*      See comments at beginning of module Requests for some things    *)
 (*          not yet implemented.                                        *)
 (*                                                                      *)
@@ -61,7 +61,7 @@ FROM Sockets IMPORT
     (* type *)  Socket, SockAddr, AddressFamily, SocketType,
     (* proc *)  sock_init, socket, so_cancel, setsockopt,
                 bind, listen, select, accept, soclose, psock_errno,
-                getsockname, getpeername, sock_errno;
+                getsockname, sock_errno;
 
 FROM ProgName IMPORT
     (* proc *)  GetProgramName;
@@ -97,8 +97,11 @@ FROM IOChan IMPORT
 FROM ProgramArgs IMPORT
     (* proc *)  ArgChan, IsArgPresent;
 
-FROM InetUtilities IMPORT
-    (* proc *)  AppendCard, Swap2, WaitForSocket;
+FROM MiscFuncs IMPORT
+    (* proc *)  AppendCard;
+
+FROM Inet2Misc IMPORT
+    (* proc *)  Swap2, WaitForSocket;
 
 FROM SplitScreen IMPORT
     (* proc *)  NotDetached;
@@ -130,6 +133,10 @@ VAR
     (* Event semaphore to trigger updater task. *)
 
     UpdaterFlag: OS2.HEV;
+
+    (* Event semaphore by which an external program requests a shutdown. *)
+
+    ExternalShutdownRequest: OS2.HEV;
 
     (* Flags used in shutdown processing. *)
 
@@ -183,6 +190,63 @@ PROCEDURE ["C"] ControlCHandler(): BOOLEAN;
         RETURN TRUE;
     END ControlCHandler;
 
+(********************************************************************************)
+(*                   TASK TO CATCH EXTERNAL SHUTDOWN REQUESTS                   *)
+(********************************************************************************)
+
+PROCEDURE ShutdownRequestDetector;
+
+    (* Runs as a separate task.  Detects a signal on the global event semaphore *)
+    (* by which an external program can request a shutdown.                     *)
+
+    CONST semName = "\SEM32\WEBSERVE\SHUTDOWN";
+
+    VAR count: CARDINAL;
+
+    BEGIN
+        ExternalShutdownRequest := 0;
+        IF OS2.DosOpenEventSem (semName, ExternalShutdownRequest) = OS2.ERROR_SEM_NOT_FOUND THEN
+            OS2.DosCreateEventSem (semName, ExternalShutdownRequest, OS2.DC_SEM_SHARED, FALSE);
+        END (*IF*);
+
+        (* We treat a signal on this event semaphore in the same way as we      *)
+        (* treat a CTRL/C.  In particular, we accept it more than once.         *)
+
+        WHILE NOT RapidShutdown DO
+            OS2.DosWaitEventSem (ExternalShutdownRequest, OS2.SEM_INDEFINITE_WAIT);
+            OS2.DosResetEventSem (ExternalShutdownRequest, count);
+            Signal (ShutdownRequest);
+            IF count > 0 THEN
+                Signal (ShutdownRequest);
+            END (*IF*);
+        END (*WHILE*);
+
+        OS2.DosCloseEventSem(ExternalShutdownRequest);
+
+    END ShutdownRequestDetector;
+
+(********************************************************************************)
+(*           PROCEDURE TO TELL THE OUTSIDE WORLD THAT WE'VE FINISHED            *)
+(********************************************************************************)
+
+PROCEDURE NotifyTermination;
+
+    (* Posts the global event semaphore that tells other programs that Weasel   *)
+    (* has shut down.                                                           *)
+
+    CONST semName = "\SEM32\WEBSERVE\FINISHED";
+
+    VAR hev: OS2.HEV;
+
+    BEGIN
+        hev := 0;
+        IF OS2.DosOpenEventSem (semName, hev) = OS2.ERROR_SEM_NOT_FOUND THEN
+            OS2.DosCreateEventSem (semName, hev, OS2.DC_SEM_SHARED, FALSE);
+        END (*IF*);
+        OS2.DosPostEventSem (hev);
+        OS2.DosCloseEventSem(hev);
+    END NotifyTermination;
+
 (************************************************************************)
 (*                           LOADING THE INI DATA                       *)
 (************************************************************************)
@@ -192,6 +256,7 @@ PROCEDURE LoadUpdateableINIData;
     VAR hini: HINI;
         MaxClients, timeout: CARDINAL;
         SYSapp: ARRAY [0..4] OF CHAR;
+        ResolveIP: BOOLEAN;
 
     (********************************************************************)
 
@@ -208,13 +273,15 @@ PROCEDURE LoadUpdateableINIData;
         SYSapp := "$SYS";
         MaxClients := 100;
         timeout := 120;
+        ResolveIP := FALSE;
         hini := OpenINIFile(ININame, UseTNI);
         IF INIValid (hini) THEN
             EVAL (GetItem ("MaxClients", MaxClients));
             EVAL (GetItem ("Timeout", timeout));
+            EVAL (GetItem ("ResolveIP", ResolveIP));
             CloseINIFile (hini);
         END (*IF*);
-        SetSessionParameters (MaxClients, timeout);
+        SetSessionParameters (MaxClients, timeout, ResolveIP);
         LoadReqINIData (ININame, UseTNI);
     END LoadUpdateableINIData;
 
@@ -408,7 +475,7 @@ PROCEDURE RunTheServer;
         IF ScreenEnabled THEN
             Strings.Append ("            ", message);
             UpdateTopScreenLine (0, message);
-            UpdateTopScreenLine (25, "(C) 2016 Peter Moylan");
+            UpdateTopScreenLine (25, "(C) 2018 Peter Moylan");
 
             EVAL (SetBreakHandler (ControlCHandler));
         END (*IF*);
@@ -538,6 +605,7 @@ BEGIN
     CreateSemaphore (ShutdownRequest, 0);
     EVAL(CreateTask (ShutdownChecker, 1, "ctrl/c hook"));
     EVAL(CreateTask (INIChangeDetector, 2, "update"));
+    EVAL(CreateTask (ShutdownRequestDetector, 2, "shutdown"));
     GetParameters;
     LoadINIData;
     RunTheServer;
@@ -545,6 +613,6 @@ FINALLY
     OS2.DosPostEventSem (UpdaterFlag);
     Wait (TaskDone);
     Wait (TaskDone);
-    Wait (TaskDone);
+    NotifyTermination;
 END WebServe.
 

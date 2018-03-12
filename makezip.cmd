@@ -16,7 +16,7 @@
 /* Generate symbol files.  The next four lines can be skipped   */
 /* if you don't have Perl.                                      */
 
-'copy C:\os2tk45\bin\mapxqs.exe'
+'copy D:\Dev1\mapxqs.exe'
 'call PerlEnv.cmd'
 perl 'D:\Apps\scripts\makexqs.pl' webserve.map
 say "webserve.sym and webserve.xqs should now exist"
@@ -59,6 +59,7 @@ mkdir doc
 'copy ..\WebServe.map'
 'copy ..\Setup.exe'
 'copy ..\setup.*.lng'
+'copy ..\ShutWS.cmd'
 'copy ..\movelog.cmd'
 'copy ..\README.MoveLog'
 'copy ..\makezip.cmd'

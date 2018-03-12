@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Setup for lightweight web server                                      *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2017   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE BigFrame;
         (*             The settings notebook and its frame          *)
         (*                                                          *)
         (*    Started:        4 April 2015                          *)
-        (*    Last edited:    14 August 2016                        *)
+        (*    Last edited:    22 May 2017                           *)
         (*    Status:         Working                               *)
         (*                                                          *)
         (************************************************************)
@@ -51,7 +51,7 @@ FROM Languages IMPORT
     (* type *)  LangHandle,
     (* proc *)  StrToBuffer, StrToBufferA;
 
-FROM Inet2Misc IMPORT
+FROM MiscFuncs IMPORT
     (* type *)  CharArrayPointer,
     (* proc *)  EVAL;
 

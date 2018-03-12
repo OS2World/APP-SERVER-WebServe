@@ -1,0 +1,37 @@
+DEFINITION MODULE NameLookup;
+
+        (********************************************************)
+        (*                                                      *)
+        (*               Host name lookup                       *)
+        (*                                                      *)
+        (*   We put this service into a separate module so that *)
+        (*   we can arrange to contact the nameserver in a      *)
+        (*   separate thread.  This means that there will be    *)
+        (*   no delays if the nameserver is down or slow.       *)
+        (*   If we don't have an answer by the time it's        *)
+        (*   needed, we can get by with a null name.            *)
+        (*                                                      *)
+        (*  Programmer:         P. Moylan                       *)
+        (*  Started:            23 March 1998                   *)
+        (*  Last edited:        28 September 1999               *)
+        (*  Status:             OK                              *)
+        (*                                                      *)
+        (********************************************************)
+
+
+PROCEDURE StartNameLookup (IPAddress: CARDINAL);
+
+    (* Enters a request for translating an IP address to a node name.   *)
+
+PROCEDURE CancelNameLookup (IPAddress: CARDINAL);
+
+    (* The translation requested by StartNameLookup may be aborted. *)
+
+PROCEDURE GetName (IPAddress: CARDINAL;  VAR (*OUT*) Name: ARRAY OF CHAR;
+                                                         Retain: BOOLEAN);
+
+    (* Picks up the result of the query that was initiated by StartNameLookup.  *)
+    (* If Retain is TRUE we keep the result for a possible future enquiry.      *)
+
+END NameLookup.
+

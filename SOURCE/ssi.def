@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server                                                            *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -31,16 +31,27 @@ DEFINITION MODULE SSI;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            2 May 2015                      *)
-        (*  Last edited:        3 May 2015                      *)
+        (*  Last edited:        11 March 2018                   *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
 
 
 FROM Domains IMPORT (*type*) Domain;
+FROM Requests IMPORT (*type*) Session;
 
+        (* I am not happy about the fact that SSI imports from Requests *)
+        (* and Requests imports from SSI, because that is prima facie   *)
+        (* evidence of a design error.  (And in fact I'm surprised that *)
+        (* the compiler permits it, because it creates a circularity in *)
+        (* the module dependencies.  Perhaps it's because module SSI    *)
+        (* has no module initialisation section.)  This needs cleaning  *)
+        (* up, perhaps by creating a subsidiary module to hold the      *)
+        (* Session data.  Or perhaps I just need to move CGI execution  *)
+        (* to a lower-level module, as I had it before.                 *)
 
-PROCEDURE ProcessSSI (D: Domain; VAR (*INOUT*) filename, CurrentDir: ARRAY OF CHAR);
+PROCEDURE ProcessSSI (sess: Session;  D: Domain;
+                       VAR (*INOUT*) filename, CurrentDir: ARRAY OF CHAR);
 
     (* The specified file is replaced by the modified version that      *)
     (* results from processing the SSI directives.  Assumption:         *)

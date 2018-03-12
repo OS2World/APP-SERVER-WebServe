@@ -20,7 +20,7 @@ but no comparative timing tests have been done.
 It is distributed as open-source freeware subject to the GNU GPL
 licence. The source code is included in the zip file.
 
-:p.This documentation is for version 1.6.
+:p.This documentation is for version 1.8.
 
 :p.
 :hp2.Disclaimer of Warranty:ehp2.
@@ -114,6 +114,10 @@ Some ISPs will do this for you. Some domain registrars will also
 offer this for a small extra fee. Otherwise, do a search for DNS
 hosting services. Again, be prepared to shop around for a good price.
 
+:p.If you do not have a fixed IP address, you will need to search for
+a Dynamic DNS provider. I have been using "Duck DNS" for this, and it
+works well.
+
 :p.Domain registrars and DNS providers often also offer web hosting.
 You do not need this if you are running your own web server.
 
@@ -153,6 +157,10 @@ to copy one of the existing setup.*.lng files and then translate them. The forma
 should be obvious from looking at the files. If you want to send
 those translations to me, I would be pleased to include them in
 future distributions of WebServe.
+
+:note.If you write a CGI script whose output should depend on the
+language preferences of the client, the script can look at the value
+of the environment variable HTTP_ACCEPT_LANGUAGE.
 
 .***********************************
 .*   INSTALLATION
@@ -210,7 +218,10 @@ future version, depending on whether other options are introduced.
 to type it twice if clients are still connected.
 A process killer, e.g. the "Kill" option in TOP, will also work, but
 the CTRL/C method is preferred because it makes
-WebServe tidy up and exit cleanly.
+WebServe tidy up and exit cleanly. Alternatively, the utility ShutWS.cmd,
+which is included in this distribution, does the equivalent of typing
+CTRL/C twice. This can be useful if the machine running WebServe has
+no keyboard.
 
 :p.The server is not going to do anything interesting
 until you have run Setup to specify at least one domain. For that
@@ -354,9 +365,8 @@ one of the existing clients disconnects.
 
 :p.The setting here will depend on how busy you expect the server to be,
 how fast your hardware is, and how many simultaneous threads your
-system can support. (Each connection uses up two threads, one for the
-connection itself and one for a watchdog timer.) The default value of
-100 should be adequate for most situations.
+system can support. The default value
+should be more than adequate for most situations.
 
 :p.:hp3.Language:ehp3.
 
@@ -368,8 +378,28 @@ labels might be blank.)
 
 :p.You are free to add your own setup.abc.lng for language "abc". The
 easiest way to do this is to make a copy of setup.en.lng, and translate it
-in the obvious way.
+in the obvious way. If you do this, I would appreciate your permission to
+include your translation (with acknowledgement) in the next version of
+WebServe. To get credit for your work, make sure you include your name or
+other identification in the comments.
 
+:p.:hp3.Resolve IP addresses:ehp3.
+
+:p.Both the common log and the transaction log identify the clients that
+have accessed your server. If this option is not enabled, then only the
+client's numeric IP address is stored. If it is enabled, then we record
+a hostname instead.
+
+:note.In some cases you will get the numeric address anyway, because
+we wait only for a short time for a nameserver response. The reason for
+this low patience level is that the majority of clients turn out to be
+web crawlers searching for security holes, and most of them don't have nameserver entries.
+
+:p.Normally you should leave this option turned off. Getting the hostname
+requires an extra nameserver access, which slows down the server's
+responsiveness; and if you really do need the client's hostname you can
+look it up as a separate off-line check. If, however, the slight time
+penalty does not bother you, then you can turn this on.
 
 .***********************************
 .*   DOMAINS
@@ -412,7 +442,9 @@ name is highlighted, or by double-clicking on the domain name.
 :p.On this page you can specify either transfer logging, or
 transaction logging, or both. The difference is that the transfer log
 gives you one entry per client request, while transaction logging
-gives a more detailed log.
+gives a more detailed log. Transfer logging is useful for keeping a
+record of how clients are using your server. Transaction logging is
+useful for debugging problems.
 
 :p.The "common log" form of transfer log uses a format that is
 expected by some web analysis tools. I gather that there is a newer
@@ -437,7 +469,8 @@ adapt.
 :p.The "More detailed logging" checkbox at the bottom of this page controls
 how much detail is sent to the transaction log. If it is enabled, we log
 not only the requests and responses, but also the parameters that go with those
-requests and responses.
+requests and responses. The definition of "more detailed" might change from
+one version to another of WebServe.
 
 :p.Logging can produce large log files. It is a good idea to move the log files
 to an archive, or even delete them, periodically. To see how to do this, read
@@ -450,7 +483,7 @@ the file README.MoveLog in the WebServe distribution.
 :h2 id=oldMIME.MIME
 :hp2.The MIME types recognised by the server:ehp2.
 
-:p.If you see this page, you are running an old version of Setup. The MIME types
+:p.If you see this page in the Setup notebook, you are running an old version of Setup. The MIME types
 are no longer configured in Setup. They are instead specified in a file called
 :link reftype=hd refid=MIME.MIME.CFG:elink..
 
@@ -503,6 +536,34 @@ port number.
 case of local configuration.
 
 .***************************************
+.*   TIME ZONE
+.***************************************
+
+:h1.Setting the time zone
+:hp2.Setting the time zone:ehp2.
+
+:p.A web server is required, in its responses to web clients, to
+report the time in GMT rather than in local time, so it needs to know
+the local time zone. You will see the time zone reported in the transaction log
+as WebServe starts up.
+
+:p.Many OS/2 installations, however, don't have their time zone set.
+If you find that the "Received:" header line has a date and time, but
+no time zone, you need to set the time zone on your machine.
+
+:p.One way to do this is with my (free) TZSet utility. You can find this
+at http&colon.&slash.&slash.www.pmoylan.org&slash.pages/os2. TZSet parses
+the TZ string in CONFIG.SYS, and uses the result to set the time zone
+in the OS/2 system clock. It then goes idle, waiting to make the next
+clock change.
+
+:p.With some (but not all) releases of eComStation you don't need TZSet, because
+the eClock program that comes with eComStation will look after
+setting the time zone information. The way to check this is to look at
+the first few lines of the WebServe log,
+to see whether a time zone is specified.
+
+.***************************************
 .*   EDITING THE DOMAIN PROPERTIES
 .***************************************
 
@@ -523,7 +584,8 @@ alternative.
 
 :p.Names with wildcards are allowed in the listbox. For example, you might
 have a domain name yourdomain.com, and then specify *.yourdomain.com as
-an alternative name.
+an alternative name. In a wildcard specification, ? means any single
+character, and * means any string of characters, including the empty string.
 
 :p.To complete specifying the properties of the domain, you must specify
 :ul.
@@ -545,7 +607,7 @@ cross-references between HTML files.
 :p.The HTML root is normally specified as an absolute path name, i.e. one that
 starts either with a drive letter or a '/'. If instead you specify a relative
 path, it will be relative to the directory that holds WebServe.exe. Specifying a
-relative path is usually not a good idea. It is better to keep the HTML files
+relative path is usually :hp2.not:ehp2. a good idea. It is better to keep the HTML files
 separate from the WebServe executable.
 
 :p.When a web client is browsing a domain, it will most probably first try to
@@ -556,7 +618,7 @@ named "index.shtml", "index.html", "index.htm", in that order, and choose the
 first one that is found. The same rule applies for every URL that ends with a
 "/", which of course means that you can have index.html files at each level of
 your site hierarchy. If none of these files is found, the server will return a
-:link reftype=hd refid=404."404 not found":elink.response.
+:link reftype=hd refid=404."404 not found":elink. response.
 
 :p.The assumption, of course, is that every resource in a domain can be found,
 directly or indirectly, by following links from the index file(s). You are,
@@ -693,7 +755,7 @@ the first line and ignoring the others.
 including WebServe, implement to allow clients to request the execution of
 an executable script on their behalf, and return the results in the form of a web page.
 An example of such a request is
-:xmp.       http&colon.//www.pmoylan.org/cgi-bin/wft.cmd?D=moylan;P=I004
+:xmp.       http&colon.//www.pmoylan.org/cgi-bin/wft.cmd?D=moylan&amp.P=I004
 :exmp.
 Here, the /cgi-bin is an indication that this is a CGI request; wft.cmd is the
 name of the script; and the part after the '?' gives the parameters that are
@@ -712,7 +774,7 @@ scripts in the CGI directory.
 :p.WebServe implements only a subset of CGI as described in
 http&colon.//tools.ietf.org/html/rfc3875,
 which is a "for information" document rather than a standards-track proposal.
-Only the GET form of HTTP request is supported, and most of the options are
+Both the GET and POST forms of HTTP request are supported, but many of the options are
 not implemented. We require that the script produce an HTML document with header
 lines, a blank line, and then the HTML body. If there are no header lines,
 the output must begin with a blank line. The requirement for header lines is
@@ -724,15 +786,53 @@ which is covered in a separate section.
 shell: a Rexx script, a Perl script, a *.exe executable program, and a few
 other less common possibilities.
 
-:p.The information passed to the script is passed in the form of OS/2 environment
-variables. At present WebServe passes only two environment variables:
+:p.The information passed to the script is passed in the form of OS/2
+:link reftype=hd refid=environment.environment variables:elink..
+The script can access these variables through the API call DosScanEnv,
+or possibly in other ways depending on the programming language being used.
+The environment variables last only for the execution of a single CGI
+script, and are generated afresh each time a CGI script is invoked. Many
+of these values are derived from the header lines supplied by the web
+client.
+
+.***************************************
+.*   ENVIRONMENT VARIABLES
+.***************************************
+
+:h2 id=environment.Environment variables
+:hp2.Environment variables:ehp2.
+
+:p.There are three ways of passing information to a CGI script.
+:ul.
+:li.The parameters after a '?' character in the URL. This is commonly
+done in the CGI GET method.
+:li.In a non-empty document body that is included in the HTTP request
+from the client. This is normally what is done in a CGI POST.
+:li.In string-valued environment variables that are supplied when
+the script is started. Any CGI method can use these.
+:eul.
+
+:p.RFC 3875 defines a number of environment variables to be used this
+way, but WebServe does not support all of these. At least one is a
+security hole, and it seems unlikely that many CGI scripts will need
+some of the others. The ones that WebServe does support are:
 :dl compact tsize=40.
+:dt.    CONTENT_LENGTH
+:dd.the length, as a decimal string, of the document body being passed to the script.
+:dt.    CONTENT_TYPE
+:dd.the type of that document, for example multipart/form-data.
 :dt.    QUERY_STRING
-:dd.the part after the '?' in the request.
+:dd.the part, if any, after the '?' in the request.
 :dt.    HTTP_ACCEPT_LANGUAGE
 :dd.a string that specifies the caller's preferred language(s)
+:dt.    REMOTE_HOST
+:dd.the hostname of the client making the request.
+:dt.    REQUEST_METHOD
+:dd.the string "GET" or "POST".
 :edl.
-:p.but more variables can be added on request.
+
+:p.More variables can be added on request. Just let me know what your
+script needs.
 
 .***************************************
 .*   SSI

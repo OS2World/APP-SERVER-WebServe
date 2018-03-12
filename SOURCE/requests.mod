@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server session manager                                            *)
-(*  Copyright (C) 2016   Peter Moylan                                     *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE Requests;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        30 August 2016                  *)
+        (*  Last edited:        10 March 2018                   *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -42,27 +42,24 @@ IMPLEMENTATION MODULE Requests;
 (*      (Nothing at present)                                            *)
 (*                                                                      *)
 (* FOR FURTHER CONSIDERATION:                                           *)
-(*      Handle one or both of the If-Modified-Since                     *)
-(*                or If-Range header fields.                            *)
+(*      Handle If-Range header fields.                                  *)
 (*      Handle "partial GET" requested by a Range header.               *)
 (*                                                                      *)
 (************************************************************************)
 
-IMPORT Strings;
+IMPORT Strings, OS2;
 
 FROM SYSTEM IMPORT
     (* type *)  LOC,
     (* proc *)  CAST;
 
 FROM Names IMPORT
-    (* type *)  FilenameString, HostName;
+    (* type *)  FilenameIndex, FilenameString, HostName;
 
-FROM Types IMPORT
-    (* type *)  CARD64;
-
-FROM LONGLONG IMPORT
+FROM Arith64 IMPORT
+    (* type *)  CARD64,
     (* const*)  Zero64,
-    (* proc *)  Compare64, Sub64;
+    (* proc *)  IsZero, Compare64, Sub64;
 
 FROM LowLevel IMPORT
     (* proc *)  EVAL, IAND;
@@ -75,7 +72,7 @@ FROM WSV IMPORT
 
 FROM Sockets IMPORT
     (* type *)  Socket, SockAddr,
-    (* proc *)  getpeername, send;
+    (* proc *)  send;
 
 FROM INIData IMPORT
     (* type *)  HINI,
@@ -84,23 +81,20 @@ FROM INIData IMPORT
 FROM SplitScreen IMPORT
     (* proc *)  NotDetached;
 
-FROM InetUtilities IMPORT
-    (* proc *)  ConvertCard64;
-
 FROM TransLog IMPORT
     (* proc *)  OpenLogContext, CloseLogContext,
                 StartTransactionLogging, SetProcname, SetSyslogHost;
-
-FROM Semaphores IMPORT
-    (* type *)  Semaphore,
-    (* proc *)  Signal;
 
 FROM TaskControl IMPORT
     (* type *)  Lock,
     (* proc *)  CreateLock, DestroyLock, Obtain, Release;
 
+FROM MiscFuncs IMPORT
+    (* proc *)  StringMatch,
+    (* proc *)  ConvertCard64, GetNum;
+
 FROM Inet2Misc IMPORT
-    (* proc *)  WaitForSocketOut, IPToString, StringMatch;
+    (* proc *)  WaitForSocketOut;
 
 FROM MyClock IMPORT
     (* proc *)  FormatCurrentDateTime, CurrentDateAndTimeGMT, CompareDateStrings;
@@ -111,17 +105,22 @@ FROM TransLog IMPORT
 
 FROM InStream IMPORT
     (* type *)  IStream,
-    (* proc *)  OpenIStream, CloseIStream, GetLine;
+    (* proc *)  OpenIStream, CloseIStream, GetLine, GetBytes;
 
 FROM FileOps IMPORT
     (* const*)  NoSuchChannel,
     (* type *)  ChanId, DirectoryEntry,
-    (* proc *)  OpenOldFile, OpenAtEnd, CloseFile, Exists, ReadRaw, ReadLine,
+    (* proc *)  OpenOldFile, OpenAtEnd, OpenNewFile, CloseFile, Exists,
+                ReadRaw, ReadLine, WriteRaw,
                 FWriteChar, FWriteString, FWriteLJCard64, FWriteLn,
                 DeleteFile, FirstDirEntry, DirSearchDone;
 
 FROM Misc IMPORT
     (* proc *)  MakeNewFilename, SkipLeadingSpaces, MatchLeading;
+
+FROM Watchdog IMPORT
+    (* type *)  WatchdogID,
+    (* proc *)  KickWatchdog;
 
 FROM SSI IMPORT
     (* proc *)  ProcessSSI;
@@ -134,8 +133,9 @@ FROM Domains IMPORT
 FROM MIMEtypes IMPORT
     (* proc *)  IdentifyType;
 
-FROM ExecCGI IMPORT
-    (* proc *)  ExecProgram;
+FROM Environment IMPORT
+    (* type *)  EnvRecordPtr,
+    (* proc *)  AddToEnvironmentString, DiscardEnvironmentString;
 
 (************************************************************************)
 
@@ -150,19 +150,20 @@ TYPE
                   RECORD
                       LogID: TransactionLogID;
                       socket: Socket;
-                      KeepAlive: Semaphore;
+                      watchID: WatchdogID;
                       instream: IStream;
-                      domain: Domain;
-                      acceptlanguage: ARRAY [0..255] OF CHAR;
-                      mustclose: BOOLEAN;
-                      Host: ARRAY [0..255] OF CHAR;
+                      ClientName: ARRAY [0..511] OF CHAR;
 
                       (* The remaining fields are specific  *)
-                      (* to the current transaction.        *)
+                      (* to the current request.            *)
 
+                      penv: EnvRecordPtr;
+                      mustclose: BOOLEAN;
+                      domain: Domain;
+                      contentlength: CARDINAL;
                       ReqBuffer: ARRAY [0..1023] OF CHAR;
                       URL:  ARRAY [0..1023] OF CHAR;
-                      lastmodified: ARRAY [0..31] OF CHAR;
+                      Host: ARRAY [0..255] OF CHAR;
                       ifmodifiedsince: ARRAY [0..31] OF CHAR;
 
                   END (*RECORD*);
@@ -196,19 +197,13 @@ PROCEDURE MakeCommonLogEntry (sess: Session;
     (* address, and the last two numbers are the status code in our     *)
     (* response, and the number of octets transferred.                  *)
 
-    VAR peer: SockAddr;  size: CARDINAL;
-        cid: ChanId;
+    VAR cid: ChanId;
         Buffer: ARRAY [0..511] OF CHAR;
 
     BEGIN
-        size := SIZE(peer);
-        IF getpeername (sess^.socket, peer, size) THEN
-            peer.in_addr.addr := 0;
-        END (*IF*);
         Obtain (CommonLogLock);
         cid := OpenAtEnd (CommonLogName);
-        IPToString (peer.in_addr.addr, FALSE, Buffer);
-        FWriteString (cid, Buffer);
+        FWriteString (cid, sess^.ClientName);
         FWriteString (cid, " - - ");
         FormatCurrentDateTime ('[dd/mmm/yyyy:HH:MM:SS zzzz] ', FALSE, Buffer);
         FWriteString (cid, Buffer);
@@ -230,7 +225,6 @@ PROCEDURE MakeCommonLogEntry (sess: Session;
 PROCEDURE BodySize (file: ARRAY OF CHAR): CARD64;
 
     (* Returns the size of the file, minus the size of the header lines.*)
-
 
     VAR DirEnt: DirectoryEntry;
         cid: ChanId;
@@ -323,7 +317,7 @@ PROCEDURE PutFile (sess: Session;  id: ChanId);
             IF xferred = 0 THEN
                 EXIT(*LOOP*)
             END (*IF*);
-            Signal (sess^.KeepAlive);
+            KickWatchdog (sess^.watchID);
             IF WaitForSocketOut (S, MAX(CARDINAL)) > 0 THEN
                 xferred := send (S, BuffPtr^, xferred, 0);
             ELSE
@@ -360,7 +354,8 @@ PROCEDURE SendFile (sess: Session;  VAR (*IN*) name: ARRAY OF CHAR);
 (************************************************************************)
 
 PROCEDURE OpenSession (S: Socket;  ID: TransactionLogID;
-                            KeepAliveSem: Semaphore): Session;
+                            ClientName: ARRAY OF CHAR;
+                            WID: WatchdogID): Session;
 
     (* Creates the session state for a new session. *)
 
@@ -370,16 +365,18 @@ PROCEDURE OpenSession (S: Socket;  ID: TransactionLogID;
         NEW (result);
         result^.LogID := ID;
         result^.socket := S;
-        result^.KeepAlive := KeepAliveSem;
+        Strings.Assign (ClientName, result^.ClientName);
+        result^.watchID := WID;
         result^.instream := OpenIStream (S);
         result^.domain := NilDomain;
+        result^.contentlength := 0;
         result^.mustclose := FALSE;
         result^.Host := "";
         result^.URL := "";
         result^.ReqBuffer := "";
-        result^.lastmodified := "";
         result^.ifmodifiedsince := "";
-        result^.acceptlanguage := "en";
+        result^.penv := NIL;
+        AddToEnvironmentString (result^.penv, "REMOTE_HOST", ClientName);
         RETURN result;
     END OpenSession;
 
@@ -393,6 +390,7 @@ PROCEDURE CloseSession (VAR (*INOUT*) sess: Session);
         IF sess <> NIL THEN
             CloseIStream (sess^.instream);
             CloseDomain (sess^.domain);
+            DiscardEnvironmentString (sess^.penv);
             DISPOSE (sess);
         END (*IF*);
     END CloseSession;
@@ -423,6 +421,7 @@ PROCEDURE NotFoundResponse (sess: Session);
         size: CARD64;  CGI, SHTML: BOOLEAN;
         message: ARRAY [0..63] OF CHAR;
         parambuffer: ARRAY [0..127] OF CHAR;
+        lastmodified: ARRAY [0..31] OF CHAR;
         filename: FilenameString;
 
     BEGIN
@@ -435,7 +434,7 @@ PROCEDURE NotFoundResponse (sess: Session);
         PutAndLogLine (S, ID, message, FALSE);
         message := "/404*.html";
         IF LocateFile (sess^.domain, message, filename,
-                                  sess^.lastmodified, size, CGI, SHTML) THEN
+                                  lastmodified, size, CGI, SHTML) THEN
             PutAndLogLine (S, ID, "Content-Type: text/html", FALSE);
             message := "Content-Length: ";
             pos := Strings.Length (message);
@@ -476,6 +475,149 @@ PROCEDURE NotImplementedResponse (sess: Session);
     END NotImplementedResponse;
 
 (************************************************************************)
+(*                        EXECUTING A CGI SCRIPT                        *)
+(************************************************************************)
+
+PROCEDURE ExecProgram (sess: Session;  progname: ARRAY OF CHAR;
+                            VAR (*IN*) tempfile: ARRAY OF CHAR);
+
+    (* Executes a CGI application.  Progname specifies the program or   *)
+    (* script to be executed, optionally followed by a '?' followed by  *)
+    (* parameters to be sent to the program.  Program output is put in  *)
+    (* tempfile, which the caller must delete after use.                *)
+
+    CONST
+        ONLength = 256;
+        HF_STDIN = 0;
+        HF_STDOUT = 1;
+        PipeSize = 2048;
+
+    VAR j, result, pos, actual, wanted, total, written: CARDINAL;
+        ArgString, progparams: FilenameString;
+        FailureObjectName: ARRAY [0..ONLength-1] OF CHAR;
+        ExitStatus: OS2.RESULTCODES;
+        found: BOOLEAN;
+        rc: OS2.APIRET;
+        SaveStdOut, outRead, outWrite, StdOut,
+            SaveStdIn, inRead, inWrite, StdIn: OS2.HFILE;
+        cid: ChanId;
+        Buffer: ARRAY [0..PipeSize-1] OF CHAR;
+
+    BEGIN
+        (* Dummy assignments to avoid a compiler warning. *)
+
+        inWrite := 0;  inRead := 0;  SaveStdIn := 0;
+
+        (* First separate out the parameters, if any, to be passed to   *)
+        (* the CGI script or program.                                   *)
+
+        Strings.FindNext ('?', progname, 0, found, pos);
+        IF found THEN
+            Strings.Extract (progname, pos+1, LENGTH(progname)-pos-1, progparams);
+            progname[pos] := Nul;
+            AddToEnvironmentString (sess^.penv, "QUERY_STRING", progparams);
+        END (*IF*);
+
+        (* Save the standard output handle, so that we can later restore it. *)
+
+        rc := OS2.DosDupHandle (HF_STDOUT, SaveStdOut);
+
+        (* Create a pipe for the script output, and map standard output *)
+        (* to the "write" end of the pipe.                              *)
+
+        rc := OS2.DosCreatePipe(outRead, outWrite, PipeSize);
+        StdOut := HF_STDOUT;
+        rc := OS2.DosDupHandle (outWrite, StdOut);
+
+        (* Do the same for the standard input, if needed. *)
+
+        IF sess^.contentlength > 0 THEN
+            rc := OS2.DosDupHandle (HF_STDIN, SaveStdIn);
+            rc := OS2.DosCreatePipe(inRead, inWrite, PipeSize);
+            StdIn := HF_STDIN;
+            rc := OS2.DosDupHandle (inRead, StdIn);
+        END (*IF*);
+
+        (* Set up the arguments for DosExecPgm. *)
+
+        ArgString := "CMD /C ";
+        Strings.Append (progname, ArgString);
+
+        (* Special rule for ArgString: it must be terminated by two Nul *)
+        (* characters, and the program name and arguments must also be  *)
+        (* separated by a Nul.  We have to insert the separating Nul    *)
+        (* after everything else has been done, otherwise it would mess *)
+        (* up the Strings.Append operation.                             *)
+
+        (* For the purpose of these rules, CMD is the program name.     *)
+        (* Everything else, including ProgName, is considered to be     *)
+        (* part of the arguments.                                       *)
+
+        j := LENGTH(ArgString) + 1;
+        IF j <= MAX(FilenameIndex) THEN
+            ArgString[j] := Nul;
+        END (*IF*);
+        ArgString[3] := Nul;
+
+        result := OS2.DosExecPgm (FailureObjectName, ONLength,
+                                  OS2.EXEC_ASYNC, ArgString, sess^.penv^.content,
+                                  ExitStatus, "CMD.EXE");
+
+        (* At present I'm not doing anything with the exit status.      *)
+        (* Some more error checking is desirable here.                  *)
+
+        wanted := sess^.contentlength;
+        IF wanted > 0 THEN
+
+            (* Copy from socket stream to input pipe. *)
+
+            WHILE wanted > 0 DO
+                GetBytes (sess^.instream, Buffer, wanted, actual);
+                IF actual = 0 THEN
+                    wanted := 0;        (* to force loop termination *)
+                ELSE
+                    total := 0;
+                    REPEAT
+                        rc := OS2.DosWrite (inWrite, Buffer, actual, written);
+                        INC (total, written);
+                    UNTIL written = actual;
+                    DEC (wanted, actual);
+                END (*IF*);
+            END (*LOOP*);
+
+            OS2.DosClose (inWrite);
+            OS2.DosDupHandle (SaveStdIn, StdIn);
+
+        END (*IF*);
+
+        (* Here I would have expected to wait for the child process to  *)
+        (* terminate, but for some reason a DosWaitChild never returns. *)
+        (* Perhaps the DosClose is sufficient.                          *)
+
+        (* Close write handle of the output pipe. *)
+
+        OS2.DosClose (outWrite);
+
+        (* Restore the original stdout. *)
+
+        OS2.DosDupHandle (SaveStdOut, StdOut);
+
+        (* Copy from pipe to temporary file. *)
+
+        cid := OpenNewFile (tempfile, FALSE);
+        LOOP
+            rc := OS2.DosRead (outRead, Buffer, PipeSize, actual);
+            IF (rc = OS2.ERROR_NO_DATA) OR (actual = 0) THEN
+                EXIT (*LOOP*);
+            END (*IF*);
+            WriteRaw (cid, Buffer, actual);
+        END (*LOOP*);
+
+        CloseFile (cid);
+
+    END ExecProgram;
+
+(************************************************************************)
 (*                 HANDLING THE GET AND HEAD COMMANDS                   *)
 (************************************************************************)
 
@@ -483,6 +625,7 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
 
     VAR message: ARRAY [0..1023] OF CHAR;
         parambuffer: ARRAY [0..127] OF CHAR;
+        lastmodified: ARRAY [0..31] OF CHAR;
         filename, tempfile: FilenameString;
         S: Socket;  CGI, SHTML, dontsend, mustdelete: BOOLEAN;
         pos: CARDINAL;
@@ -502,11 +645,11 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
             NotFoundResponse (sess);
 
         ELSIF LocateFile (sess^.domain, sess^.URL, filename,
-                                  sess^.lastmodified, size, CGI, SHTML) THEN
+                                  lastmodified, size, CGI, SHTML) THEN
 
             dontsend := FALSE;
             IF NOT CGI AND NOT SHTML AND (sess^.ifmodifiedsince[0] <> Nul) THEN
-                dontsend := CompareDateStrings (sess^.lastmodified,
+                dontsend := CompareDateStrings (lastmodified,
                                         sess^.ifmodifiedsince) <= 0;
             END (*IF*);
 
@@ -539,7 +682,7 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
                     (* Execute CGI application. *)
 
                     MakeNewFilename (tempfile);
-                    ExecProgram (filename, sess^.acceptlanguage, tempfile);
+                    ExecProgram (sess, filename, tempfile);
                     size := BodySize (tempfile);
                     message := "Content-Length: ";
                     pos := Strings.Length (message);
@@ -566,8 +709,8 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
                     IdentifyType (filename, parambuffer);
                     IF SHTML THEN
                         DirOf (sess^.domain, filename, tempfile);
-                        ProcessSSI (sess^.domain, filename, tempfile);
-                        sess^.lastmodified[0] := Nul;
+                        ProcessSSI (sess, sess^.domain, filename, tempfile);
+                        lastmodified[0] := Nul;
                         size := SizeOf (filename);
                         mustdelete := TRUE;
                     END (*IF*);
@@ -577,9 +720,9 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
                         PutAndLogLine (S, ID, message, FALSE);
                     END (*IF*);
 
-                    IF sess^.lastmodified[0] <> Nul THEN
+                    IF lastmodified[0] <> Nul THEN
                         message := "Last-Modified: ";
-                        Strings.Append (sess^.lastmodified, message);
+                        Strings.Append (lastmodified, message);
                         PutAndLogLine (S, ID, message, FALSE);
                     END (*IF*);
 
@@ -618,15 +761,115 @@ PROCEDURE HandleGETcommand (sess: Session;  IncludeBody: BOOLEAN);
     END HandleGETcommand;
 
 (************************************************************************)
+(*                     HANDLING THE POST COMMAND                        *)
+(************************************************************************)
+
+PROCEDURE HandlePOSTcommand (sess: Session);
+
+    VAR message: ARRAY [0..255] OF CHAR;
+        parambuffer: ARRAY [0..127] OF CHAR;
+        lastmodified: ARRAY [0..31] OF CHAR;
+        S: Socket;  CGI, SHTML: BOOLEAN;
+        pos: CARDINAL;
+        ID: TransactionLogID;
+        size: CARD64;
+        filename, tempfile: FilenameString;
+
+    BEGIN
+        ID := sess^.LogID;
+        IF sess^.domain = NilDomain THEN
+            sess^.domain := OpenDomain (sess^.Host);
+        END (*IF*);
+        S := sess^.socket;
+
+        IF sess^.domain = NilDomain THEN
+
+            NotFoundResponse (sess);
+
+        ELSIF LocateFile (sess^.domain, sess^.URL, filename,
+                                  lastmodified, size, CGI, SHTML) THEN
+
+            IF CGI THEN
+
+                (* General "OK" header lines. *)
+
+                PutAndLogLine (S, ID, "HTTP/1.1 200 OK", TRUE);
+
+                message := "Server: WebServe/";
+                Strings.Append (version, message);
+                PutAndLogLine (S, ID, message, FALSE);
+
+                message := "Date: ";
+                CurrentDateAndTimeGMT (parambuffer);
+                Strings.Append (parambuffer, message);
+                PutAndLogLine (S, ID, message, FALSE);
+
+                IF sess^.mustclose THEN
+                    PutAndLogLine (S, ID, "Connection: close", FALSE);
+                ELSE
+                    PutAndLogLine (S, ID, "Connection: keep-alive", FALSE);
+                END (*IF*);
+
+                (* Execute the CGI application. *)
+
+                MakeNewFilename (tempfile);
+                ExecProgram (sess, filename, tempfile);
+                size := BodySize (tempfile);
+                message := "Content-Length: ";
+                pos := Strings.Length (message);
+                ConvertCard64 (size, message, pos);
+                message[pos] := Nul;
+                PutAndLogLine (S, ID, message, FALSE);
+
+                IF IsZero(size)  THEN
+                    PutAndLogLine (S, ID, "", FALSE);
+                ELSE
+
+                    (* We expect that tempfile also includes some   *)
+                    (* header lines, plus the blank line that       *)
+                    (* terminates the header.                       *)
+
+                    SendFile (sess, tempfile);
+                END (*IF*);
+                DeleteFile (tempfile);
+
+            ELSE
+                NotImplementedResponse (sess);
+            END (*IF*);
+
+        ELSE
+            (* File not found, cannot satisfy request. *)
+
+            NotFoundResponse (sess);
+
+        END (*IF*);
+
+    END HandlePOSTcommand;
+
+(************************************************************************)
 (*                  PARSING THE HEADER OF A REQUEST                     *)
 (************************************************************************)
 
 PROCEDURE ParseParameters (sess: Session);
 
     VAR ReqBuffer, message: ARRAY [0..511] OF CHAR;
+        acceptlanguage: ARRAY [0..255] OF CHAR;
+        pos: CARDINAL;
         InHeader: BOOLEAN;
 
     BEGIN
+        (* Clear obsolete information from the last request. *)
+
+        sess^.URL[0] := Nul;
+        sess^.Host[0] := Nul;
+        CloseDomain (sess^.domain);
+        sess^.contentlength := 0;
+        sess^.ifmodifiedsince[0] := Nul;
+        acceptlanguage := "en";
+        DiscardEnvironmentString (sess^.penv);
+
+        (* Get new values from header. *)
+
         InHeader := TRUE;
         WHILE InHeader DO
             IF GetLine (sess^.instream, ReqBuffer) THEN
@@ -641,14 +884,26 @@ PROCEDURE ParseParameters (sess: Session);
 
                 ELSIF MatchLeading (ReqBuffer, "Accept-Language:") THEN
                     SkipLeadingSpaces (ReqBuffer);
-                    Strings.Assign (ReqBuffer, sess^.acceptlanguage);
+                    Strings.Assign (ReqBuffer, acceptlanguage);
+
+                ELSIF MatchLeading (ReqBuffer, "Content-Length:") THEN
+                    SkipLeadingSpaces (ReqBuffer);
+                    pos := 0;
+                    sess^.contentlength := GetNum (ReqBuffer, pos);
+                    AddToEnvironmentString (sess^.penv, "CONTENT_LENGTH", ReqBuffer);
+
+                ELSIF MatchLeading (ReqBuffer, "Content-Type:") THEN
+                    SkipLeadingSpaces (ReqBuffer);
+                    AddToEnvironmentString (sess^.penv, "CONTENT_TYPE", ReqBuffer);
 
                 ELSIF MatchLeading (ReqBuffer, "Connection:") THEN
                     SkipLeadingSpaces (ReqBuffer);
                     sess^.mustclose := MatchLeading (ReqBuffer, "close");
 
                 ELSIF MatchLeading (ReqBuffer, "Host:") THEN
-                    Strings.Assign (ReqBuffer, sess^.Host);
+                    IF sess^.Host[0] = Nul THEN
+                        Strings.Assign (ReqBuffer, sess^.Host);
+                    END (*IF*);
 
                 ELSIF MatchLeading (ReqBuffer, "If-Modified-Since:") THEN
                     Strings.Assign (ReqBuffer, sess^.ifmodifiedsince);
@@ -660,6 +915,11 @@ PROCEDURE ParseParameters (sess: Session);
             END (*IF*);
 
         END (*WHILE*);
+
+        (* We can now set environment variables that might or might not *)
+        (* have been supplied in the header. *)
+
+        AddToEnvironmentString (sess^.penv, "HTTP_ACCEPT_LANGUAGE", acceptlanguage);
 
     END ParseParameters;
 
@@ -734,12 +994,6 @@ PROCEDURE HandleRequest (sess: Session);
         found := TRUE;  pos := 0;
         Strings.Assign (sess^.ReqBuffer, Work);
 
-        (* Clear obsolete information from the last request. *)
-
-        sess^.URL[0] := Nul;
-        sess^.lastmodified[0] := Nul;
-        sess^.ifmodifiedsince[0] := Nul;
-
         (* Ignore empty lines, even though clients should not produce them. *)
 
         WHILE found AND (Work[0] = Nul) DO
@@ -776,10 +1030,13 @@ PROCEDURE HandleRequest (sess: Session);
 
             (* Remark: the method is case-sensitive. *)
 
+            AddToEnvironmentString (sess^.penv, "REQUEST_METHOD", method);
             IF Strings.Equal (method, "GET") THEN
                 HandleGETcommand (sess, TRUE);
             ELSIF Strings.Equal (method, "HEAD") THEN
                 HandleGETcommand (sess, FALSE);
+            ELSIF Strings.Equal (method, "POST") THEN
+                HandlePOSTcommand (sess);
             ELSE
                 NotImplementedResponse (sess);
             END (*IF*);
@@ -806,7 +1063,6 @@ PROCEDURE HandleOneRequest (sess: Session;
             message := "< ";
             Strings.Append (sess^.ReqBuffer, message);
             LogTransaction (sess^.LogID, message);
-            (*Signal (KeepAliveSemaphore);*)
             HandleRequest (sess);
             mustclose := sess^.mustclose;
             RETURN TRUE;

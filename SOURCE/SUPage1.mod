@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Setup for lightweight web server                                      *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE SUPage1;
         (*                    Page 1 of the notebook                    *)
         (*                                                              *)
         (*        Started:        5 April 2015                          *)
-        (*        Last edited:    29 April 2015                         *)
+        (*        Last edited:    27 January 2018                       *)
         (*        Status:         OK                                    *)
         (*                                                              *)
         (****************************************************************)
@@ -53,7 +53,7 @@ FROM RINIData IMPORT
 FROM Remote IMPORT
     (* proc *)  OurDirectory;
 
-FROM Inet2Misc IMPORT
+FROM MiscFuncs IMPORT
     (* type *)  CharArrayPointer,
     (* proc *)  EVAL;
 
@@ -83,6 +83,7 @@ VAR
 
     OldServerPort, OldTimeout, OldMaxClients: CARDINAL;
     OldEnable: CARDINAL;
+    OldResolveIP: BOOLEAN;
     OldLanguage: ARRAY [0..LangStringSize] OF CHAR;
 
 (************************************************************************)
@@ -110,6 +111,8 @@ PROCEDURE SetLanguage (lang: LangHandle);
         OS2.WinSetDlgItemText (pagehandle, DID.WebMaxLabel, stringval);
         StrToBuffer (lang, "Page1.Language", stringval);
         OS2.WinSetDlgItemText (pagehandle, DID.LanguageLabel, stringval);
+        StrToBuffer (lang, "Page1.ResolveIP", stringval);
+        OS2.WinSetDlgItemText (pagehandle, DID.ResolveIP, stringval);
     END SetLanguage;
 
 (************************************************************************)
@@ -122,6 +125,7 @@ PROCEDURE LoadValues (hwnd: OS2.HWND);
     (* or loads default values if they're not in the INI file.                  *)
 
     VAR val0: INT16;
+        val1: BOOLEAN;
 
     BEGIN
         EVAL (OpenINIFile (INIname, UseTNI));
@@ -149,16 +153,26 @@ PROCEDURE LoadValues (hwnd: OS2.HWND);
         IF INIGetCard ('$SYS', 'MaxClients', OldMaxClients) THEN
             val0 := OldMaxClients;
         ELSE
-            val0 := 100;
+            val0 := 20;
         END (*IF*);
         OS2.WinSetDlgItemShort (hwnd, DID.MaxClients, val0, FALSE);
+
+        (* Resolve IP addresses. *)
+
+        IF INIFetch ('$SYS', 'ResolveIP', OldResolveIP) THEN
+            val1 := OldResolveIP;
+        ELSE
+            val1 := FALSE;
+        END (*IF*);
+        OS2.WinSendDlgItemMsg (hwnd, DID.ResolveIP, OS2.BM_SETCHECK,
+                                 OS2.MPFROMSHORT(ORD(val1)), NIL);
+
+        CloseINIFile;
 
         (* Language has to be obtained from CommonSettings. *)
 
         CommonSettings.CurrentLanguage (OurLang, OurLangStr);
         OS2.WinSetDlgItemText(hwnd, DID.Language, OurLangStr);
-
-        CloseINIFile;
 
     END LoadValues;
 
@@ -166,11 +180,20 @@ PROCEDURE LoadValues (hwnd: OS2.HWND);
 (*                      STORING DATA TO THE INI FILE                    *)
 (************************************************************************)
 
+PROCEDURE QueryButton (hwnd: OS2.HWND;  B: CARDINAL): CARDINAL;
+
+    BEGIN
+        RETURN OS2.LONGFROMMR (OS2.WinSendDlgItemMsg (hwnd, B,
+                                              OS2.BM_QUERYCHECK, NIL, NIL));
+    END QueryButton;
+
+(**************************************************************************)
+
 PROCEDURE StoreData (hwnd1: OS2.HWND);
 
     (* Stores the values on page 1 back into the INI file.  *)
 
-    VAR val: CARDINAL;  temp: INT16;
+    VAR val: CARDINAL;  temp: INT16;  bool: BOOLEAN;
 
     BEGIN
         EVAL (OpenINIFile (INIname, UseTNI));
@@ -197,6 +220,14 @@ PROCEDURE StoreData (hwnd1: OS2.HWND);
         val := temp;
         IF val <> OldMaxClients THEN
             INIPut ('$SYS', 'MaxClients', val);
+        END (*IF*);
+
+        (* Resolve IP addresses. *)
+
+        temp := QueryButton (hwnd1, DID.ResolveIP);
+        bool := temp <> 0;
+        IF bool <> OldResolveIP THEN
+            INIPut ('$SYS', 'ResolveIP', bool);
         END (*IF*);
 
         (* Language has already been stored. *)
@@ -310,5 +341,6 @@ BEGIN
     OldTimeout := 0;
     OldEnable := 0;
     OldLanguage := "";
+    OldResolveIP := FALSE;
 END SUPage1.
 

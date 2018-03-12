@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*  Web server session manager                                            *)
+(*  Web server                                                            *)
 (*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
@@ -20,42 +20,51 @@
 (*                                                                        *)
 (**************************************************************************)
 
-DEFINITION MODULE WSession;
+DEFINITION MODULE Environment;
 
         (********************************************************)
         (*                                                      *)
-        (*           Session handler for web server             *)
+        (*           Maintaining an environment string          *)
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
-        (*  Started:            1 March 2015                    *)
-        (*  Last edited:        27 January 2018                 *)
+        (*  Started:            4 March 2018                    *)
+        (*  Last edited:        4 March 2018                    *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
 
 
-FROM Sockets IMPORT
-    (* type *)  Socket, SockAddr;
 
-FROM TransLog IMPORT
-    (* type *)  TransactionLogID;
+FROM Names IMPORT
+    (* type *)  ArgPointer;
+
+TYPE
+    (* An environment specification uses a "string of strings" format,  *)
+    (* where each string is of the form "parameter=value" with a Nul    *)
+    (* terminator.  The final Nul-terminated string must be followed    *)
+    (* by another Nul.  This gives us a long string that may contain    *)
+    (* internal Nul characters, so we cannot rely on the usual string   *)
+    (* functions to work.  In particular, we must keep track of the     *)
+    (* total length, because scanning for a Nul won't work.  (Scanning  *)
+    (* for a double Nul would work but would be inefficient.)  The      *)
+    (* convention I use here is that the length value includes all the  *)
+    (* internal Nuls but not the final one.                             *)
+
+    EnvRecordPtr = POINTER TO
+                        RECORD
+                            content: ArgPointer;
+                            length: CARDINAL;
+                        END (*RECORD*);
 
 
-PROCEDURE NewSession (S: Socket;  addr: SockAddr;
-                         LogID: TransactionLogID): BOOLEAN;
+PROCEDURE AddToEnvironmentString (VAR (*INOUT*) p: EnvRecordPtr;
+                                   parameter, value: ARRAY OF CHAR);
 
-    (* Starts and runs a client session.  The session runs in a         *)
-    (* separate thread; this procedure returns after starting the       *)
-    (* session, it does not wait until the session is over.             *)
+    (* Adds a new parameter=value entry to the environment string. *)
 
-PROCEDURE SetSessionParameters (MaxSessions, seconds: CARDINAL;  lookuphosts: BOOLEAN);
+PROCEDURE DiscardEnvironmentString (VAR (*INOUT*) p: EnvRecordPtr);
 
-    (* Sets the maximum number of sessions allowed in parallel, the time before *)
-    (* an idle session times out, and whether we should look up client hostnames.*)
+    (* Discards the memory claimed by p. *)
 
-PROCEDURE NumberOfClients(): CARDINAL;
-
-    (* Returns the number of clients who are currently logged on. *)
-
-END WSession.
+END Environment.
 

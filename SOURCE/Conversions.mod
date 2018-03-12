@@ -27,7 +27,7 @@ IMPLEMENTATION MODULE Conversions;
         (*              Miscellaneous type conversions          *)
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
-        (*  Last edited:        26 February 2012                *)
+        (*  Last edited:        26 January 2018                 *)
         (*  Status:             Working                         *)
         (*                                                      *)
         (*    EXCEPTION HANDLERS TEMPORARILY REMOVED            *)
@@ -48,11 +48,9 @@ IMPLEMENTATION MODULE Conversions;
 FROM SYSTEM IMPORT
     (* type *)  CARD8, CARD32;
 
-FROM Types IMPORT
-    (* type *)  CARD64;
-
-FROM LONGLONG IMPORT
+FROM Arith64 IMPORT
     (* const*)  Zero64,
+    (* type *)  CARD64,
     (* proc *)  Add64, Mul64, Div10;
 
 FROM LowLevel IMPORT

@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Setup for web server                                                  *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2017   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE DomainEditor;
         (*    The settings notebook for a domain, and its frame     *)
         (*                                                          *)
         (*    Started:        16 April 2015                         *)
-        (*    Last edited:    29 April 2015                         *)
+        (*    Last edited:    22 May 2017                           *)
         (*    Status:         OK                                    *)
         (*                                                          *)
         (************************************************************)
@@ -50,7 +50,7 @@ FROM Names IMPORT
 FROM Storage IMPORT
     (* proc *)  ALLOCATE, DEALLOCATE;
 
-FROM Inet2Misc IMPORT
+FROM MiscFuncs IMPORT
     (* type *)  CharArrayPointer;
 
 FROM Languages IMPORT
@@ -206,10 +206,10 @@ PROCEDURE LoadDialogueData (hwnd: OS2.HWND;  domain: ARRAY OF CHAR);
                 RINIData.NextString (state, name);
                 IF name[0] <> Nul THEN
                     (* Add name to the listbox. *)
-    
+
                     OS2.WinSendDlgItemMsg (hwnd, DID.Hostlist, OS2.LM_INSERTITEM,
                          OS2.MPFROMSHORT(OS2.LIT_END), SYSTEM.ADR(name));
-    
+
                 END (*IF*);
             UNTIL name[0] = Nul;
             RINIData.CloseStringList (state);

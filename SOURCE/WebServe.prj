@@ -18,6 +18,7 @@
 -link    = "xlink /MAP @%s",mkfname#mkfext;
 
 -TRACKTNIUSAGE:-
+-WATCHTEST:-
 
 !module WebServe
 !module SO32DLL.lib

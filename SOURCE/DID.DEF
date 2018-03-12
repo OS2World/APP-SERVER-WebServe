@@ -26,6 +26,7 @@ CONST
    Language*         = 315;
    Timeout*          = 316;
    TimeoutLabel*     = 317;
+   ResolveIP*        = 318;
    MIMEpage*         = 400;
    MIMEPageLabel*    = 402;
    MIMElist*         = 403;

@@ -28,14 +28,14 @@ DEFINITION MODULE Domains;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            3 April 2015                    *)
-        (*  Last edited:        3 May 2015                      *)
+        (*  Last edited:        26 January 2017                 *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
 
 
 
-FROM Types IMPORT
+FROM Arith64 IMPORT
     (* type *)  CARD64;
 
 TYPE Domain;       (* is private *)

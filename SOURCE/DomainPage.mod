@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Setup for web server                                                  *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2017   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE DomainPage;
         (*             The 'our domains' page of the notebook           *)
         (*                                                              *)
         (*        Started:        16 April 2015                         *)
-        (*        Last edited:    20 April 2015                         *)
+        (*        Last edited:    22 May 2017                           *)
         (*        Status:         OK                                    *)
         (*                                                              *)
         (****************************************************************)
@@ -50,7 +50,7 @@ FROM RINIData IMPORT
 FROM Names IMPORT
     (* type *)  FilenameString, DomainName;
 
-FROM Inet2Misc IMPORT
+FROM MiscFuncs IMPORT
     (* type *)  CharArrayPointer,
     (* proc *)  EVAL;
 

@@ -43,6 +43,7 @@ Page1.Port "Port"
 Page1.Timeout "Patience (secondes)"
 Page1.MaxClients "Maximum de clients"
 Page1.Language "Langage"
+Page1.ResolveIP "R‚soudre les adresses IP des clients"
 
 Domains.tab "Domaines"
 Domains.Label "NOS DOMAINES"

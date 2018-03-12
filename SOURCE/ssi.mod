@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server                                                            *)
-(*  Copyright (C) 2015   Peter Moylan                                     *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -31,7 +31,7 @@ IMPLEMENTATION MODULE SSI;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            2 May 2015                      *)
-        (*  Last edited:        6 May 2015                      *)
+        (*  Last edited:        10 March 2018                   *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (*  Directives handled so far:                          *)
@@ -52,7 +52,7 @@ FROM Storage IMPORT
 FROM LowLevel IMPORT
     (* proc *)  EVAL;
 
-FROM Types IMPORT
+FROM Arith64 IMPORT
     (* type *)  CARD64;
 
 FROM FileOps IMPORT
@@ -63,7 +63,8 @@ FROM FileOps IMPORT
 FROM Misc IMPORT
     (* proc *)  MakeNewFilename, OpenTemporaryFile, MatchLeading;
 
-FROM ExecCGI IMPORT
+FROM Requests IMPORT
+    (* type *)  Session,
     (* proc *)  ExecProgram;
 
 FROM Domains IMPORT
@@ -163,14 +164,14 @@ PROCEDURE GetFilename (virtual, cmd: BOOLEAN;
 
 (************************************************************************)
 
-PROCEDURE DoSSIProcess (outcid: ChanId;
+PROCEDURE DoSSIProcess (sess: Session;  outcid: ChanId;
                           DirInfo: DirInfoPtr;
                             VAR (*INOUT*) filename: ARRAY OF CHAR);
                                                                   FORWARD;
 
 (************************************************************************)
 
-PROCEDURE HandleDirective (incid, outcid: ChanId;
+PROCEDURE HandleDirective (sess: Session;  incid, outcid: ChanId;
                             DirInfo: DirInfoPtr;
                             VAR (*INOUT*) line: ARRAY OF CHAR);
 
@@ -202,7 +203,7 @@ PROCEDURE HandleDirective (incid, outcid: ChanId;
             END (*IF*);
             IF handled THEN
                 IF GetFilename (virtual, FALSE, DirInfo, line, partline) THEN
-                    DoSSIProcess (outcid, DirInfo, partline);
+                    DoSSIProcess (sess, outcid, DirInfo, partline);
                 END (*IF*);
             END (*IF*);
 
@@ -224,8 +225,8 @@ PROCEDURE HandleDirective (incid, outcid: ChanId;
                     IF NOT cmd THEN
                         (* For now, disable the "cmd" option because    *)
                         (* of security concerns.                        *)
-                        ExecProgram (partline, langstr, tempfile);
-                        DoSSIProcess (outcid, DirInfo, tempfile);
+                        ExecProgram (sess, partline, tempfile);
+                        DoSSIProcess (sess, outcid, DirInfo, tempfile);
                     END (*IF*);
                     DeleteFile (tempfile);
                 END (*IF*);
@@ -267,7 +268,7 @@ PROCEDURE HandleDirective (incid, outcid: ChanId;
 (*                          PROCESSING ONE FILE                         *)
 (************************************************************************)
 
-PROCEDURE DoSSIProcess (outcid: ChanId;
+PROCEDURE DoSSIProcess (sess: Session;  outcid: ChanId;
                             DirInfo: DirInfoPtr;
                                 VAR (*INOUT*) filename: ARRAY OF CHAR);
 
@@ -302,7 +303,7 @@ PROCEDURE DoSSIProcess (outcid: ChanId;
                             Strings.Delete (line, 0, pos);
                         END (*IF*);
                         Strings.Delete (line, 0, 5);
-                        HandleDirective (incid, outcid, DirInfo, line);
+                        HandleDirective (sess, incid, outcid, DirInfo, line);
                     END (*IF*);
                     IF line[0] <> Nul THEN
                         FWriteString (outcid, line);
@@ -317,7 +318,8 @@ PROCEDURE DoSSIProcess (outcid: ChanId;
 
 (************************************************************************)
 
-PROCEDURE ProcessSSI (D: Domain; VAR (*INOUT*) filename, CurrentDir: ARRAY OF CHAR);
+PROCEDURE ProcessSSI (sess: Session;  D: Domain;
+                       VAR (*INOUT*) filename, CurrentDir: ARRAY OF CHAR);
 
     (* The specified file is replaced by the modified version that      *)
     (* results from processing the SSI directives.  Assumption:         *)
@@ -333,7 +335,7 @@ PROCEDURE ProcessSSI (D: Domain; VAR (*INOUT*) filename, CurrentDir: ARRAY OF CH
         DirInfo^.domain := D;
         Strings.Assign (CurrentDir, DirInfo^.CurrentDir);
         outcid := OpenTemporaryFile (outfile);
-        DoSSIProcess (outcid, DirInfo, filename);
+        DoSSIProcess (sess, outcid, DirInfo, filename);
         CloseFile (outcid);
 
         (* Now alter the filename parameter to give the caller the  *)

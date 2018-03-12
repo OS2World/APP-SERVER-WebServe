@@ -2,7 +2,7 @@
    Appends a build level to WEBSERVE.EXE and SETUP.EXE.
 
            Author:       Peter Moylan
-           Last revised: 24 April 2015
+           Last revised: 27 January 2018
 
    Usage:
            bldlvl ver
@@ -17,7 +17,7 @@ timestamp = LEFT(DATE() TIME(),25)LEFT(projHost,10)
 signature0 = "@#Peter Moylan:"ver"#@##1## "timestamp"::EN:AU:::@@"
 outfile = "level.txt"
 "DEL "outfile" 2> nul"
-CALL LINEOUT outfile, signature0||"WebServe light-weight web server for OS/2 and eCS"
+CALL LINEOUT outfile, signature0||"WebServe light-weight web server for OS/2, eCS, ArcaOS"
 CALL STREAM outfile,'C','CLOSE'
 "@copy webserve.exe /B + level.txt webserve.exe /B >nul"
 

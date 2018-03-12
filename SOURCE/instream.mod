@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*  Web server input stream handler                                       *)
-(*  Copyright (C) 2016   Peter Moylan                                     *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU General Public License as published by  *)
@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE InStream;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        28 August 2016                  *)
+        (*  Last edited:        8 March 2018                    *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -36,9 +36,14 @@ IMPLEMENTATION MODULE InStream;
 
 IMPORT Strings;
 
+FROM SYSTEM IMPORT ADR;
+
 FROM Sockets IMPORT
     (* type *)  Socket,
     (* proc *)  recv;
+
+FROM LowLevel IMPORT
+    (* proc *)  Copy;
 
 FROM Storage IMPORT
     (* proc *)  ALLOCATE, DEALLOCATE;
@@ -154,6 +159,54 @@ PROCEDURE GetLine (stream: IStream;  VAR (*OUT*) line: ARRAY OF CHAR): BOOLEAN;
         END (*LOOP*);
 
     END GetLine;
+
+(************************************************************************)
+
+PROCEDURE GetBytes (stream: IStream;  VAR (*OUT*) result: ARRAY OF CHAR;
+                        wanted: CARDINAL;  VAR (*OUT*) actual: CARDINAL);
+
+    (* Gets at most wanted chars into result,  Returns actual as the    *)
+    (* number of characters found.                                      *)
+
+    VAR pos, toget: CARDINAL;
+
+    BEGIN
+        actual := 0;  pos := 0;
+        WHILE wanted > 0 DO
+            WITH stream^ DO
+
+                (* Fetch more if buffer is empty. *)
+
+                IF bufpos >= buflength THEN
+                    toget := wanted;
+                    IF toget > BufferSize THEN
+                        toget := BufferSize;
+                    END (*IF*);
+                    buflength := recv (sock, buffer, toget, 0);
+                    IF (buflength = MAX(CARDINAL)) OR (buflength = 0) THEN
+                        RETURN;
+                    END (*IF*);
+                    bufpos := 0;
+                END (*IF*);
+
+                (* Work out how much to copy to result. *)
+
+                toget := buflength - bufpos;
+                IF toget > wanted THEN
+                    toget := wanted;
+                END (*IF*);
+
+                Copy (ADR(buffer[bufpos]), ADR(result[pos]), toget);
+                INC (bufpos, toget);
+                INC (pos, toget);
+                INC (actual, toget);
+                DEC (wanted, toget);
+
+            END (*WITH*);
+
+        END (*WHILE*);
+
+    END GetBytes;
 
 (************************************************************************)
 
