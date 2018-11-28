@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE WSession;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        7 March 2018                    *)
+        (*  Last edited:        13 November 2018                *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -51,6 +51,10 @@ FROM Sockets IMPORT
     (* const*)  NotASocket,
     (* type *)  Socket, SockAddr,
     (* proc *)  soclose, so_cancel, sock_errno;
+
+FROM NetStream IMPORT
+    (* type *)  NStream,
+    (* proc *)  OpenNetStream;
 
 FROM Storage IMPORT
     (* proc *)  ALLOCATE, DEALLOCATE;
@@ -107,6 +111,7 @@ TYPE
                            RECORD
                                socket: Socket;
                                IPAddress: CARDINAL;
+                               secure: BOOLEAN;
                            END (*RECORD*);
 
     (* Data needed in timeout processing. *)
@@ -285,13 +290,15 @@ PROCEDURE SessionHandler (arg: ADDRESS);
         NameBuffer: ARRAY [0..511] OF CHAR;
         SessionNumber: SevenChar;
         LogMessage: ARRAY [0..127] OF CHAR;
-        EndSession, success: BOOLEAN;
+        EndSession, success, useTLS: BOOLEAN;
+        NS: NStream;
 
     BEGIN
         DosError (FERR_DISABLEHARDERR);
         NSP := arg;
         S := NSP^.socket;
         IPAddress := NSP^.IPAddress;
+        useTLS := NSP^.secure;
         DISPOSE (NSP);
 
         sess := NIL;
@@ -337,7 +344,8 @@ PROCEDURE SessionHandler (arg: ADDRESS);
 
         (* Open the session. *)
 
-        sess := OpenSession (S, LogID, NameBuffer, KB^.ID);
+        NS := OpenNetStream (S, TRUE, LogID, useTLS);
+        sess := OpenSession (NS, LogID, NameBuffer, KB^.ID);
 
         (* Here's the main command processing loop.  We leave it when   *)
         (* the client issues a QUIT command, or when socket             *)
@@ -374,7 +382,7 @@ PROCEDURE SessionHandler (arg: ADDRESS);
 (************************************************************************)
 
 PROCEDURE NewSession (S: Socket;  addr: SockAddr;
-                         LogID: TransactionLogID): BOOLEAN;
+                      LogID: TransactionLogID;  useTLS: BOOLEAN): BOOLEAN;
 
     (* Starts and runs a client session.  The session runs in a         *)
     (* separate thread; this procedure returns after starting the       *)
@@ -386,6 +394,7 @@ PROCEDURE NewSession (S: Socket;  addr: SockAddr;
         NEW (NSP);
         WITH NSP^ DO
             socket := S;  IPAddress := addr.in_addr.addr;
+            secure := useTLS;
         END (*WITH*);
         IF ResolveIP THEN
             StartNameLookup (NSP^.IPAddress);

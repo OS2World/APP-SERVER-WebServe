@@ -1,0 +1,89 @@
+(**************************************************************************)
+(*                                                                        *)
+(*  Decoding an ASN.1 coded file                                          *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
+(*                                                                        *)
+(*  This program is free software: you can redistribute it and/or modify  *)
+(*  it under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 3 of the License, or     *)
+(*  (at your option) any later version.                                   *)
+(*                                                                        *)
+(*  This program is distributed in the hope that it will be useful,       *)
+(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
+(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
+(*  GNU General Public License for more details.                          *)
+(*                                                                        *)
+(*  You should have received a copy of the GNU General Public License     *)
+(*  along with this program.  If not, see <http://www.gnu.org/licenses/>. *)
+(*                                                                        *)
+(*  To contact author:   http://www.pmoylan.org   peter@pmoylan.org       *)
+(*                                                                        *)
+(**************************************************************************)
+
+DEFINITION MODULE ASN1;
+
+        (********************************************************)
+        (*                                                      *)
+        (*   Extracting information from an ASN.1 coded file    *)
+        (*                                                      *)
+        (*  Programmer:         P. Moylan                       *)
+        (*  Started:            29 September 2018               *)
+        (*  Last edited:        15 October 2018                 *)
+        (*  Status:             OK                              *)
+        (*                                                      *)
+        (********************************************************)
+
+
+FROM SYSTEM IMPORT CARD8;
+
+FROM VarStrings IMPORT
+    (* type *)  ByteStringPtr, VarStringPtr;
+
+FROM BigNum IMPORT
+    (* type *)  BN;
+
+
+TYPE
+    ASN1part =  RECORD
+                    length: CARDINAL;
+                    val: ByteStringPtr;
+                END (*RECORD*);
+
+PROCEDURE ASN1toTxt (VAR (*IN*) bindata: ARRAY OF CARD8;  N: CARDINAL;
+                            VAR (*OUT*) textptr: VarStringPtr): CARDINAL;
+
+    (* Translates N binary bytes in ASN.1 format to text.  Returns  *)
+    (* the number of text characters.                               *)
+
+PROCEDURE ExtractParts (VAR (*IN*) bindata: ARRAY OF CARD8;
+                        VAR (*OUT*) result: ARRAY OF ASN1part): CARDINAL;
+
+    (* If bindata represents a SEQUENCE or a SET, result[k] contains    *)
+    (* a copy of the kth component of the sequence or set.  The         *)
+    (* function result is the number of components extracted.           *)
+    (* Otherwise, no result is extracted, we return 0 as the function   *)
+    (* result.  Note that some components will not be extracted if the  *)
+    (* result array is not big enough.                                  *)
+
+    (* In this version we don't make a copy for the result; we simply   *)
+    (* point into the original bindata array.                           *)
+
+PROCEDURE INTEGERtoBN (VAR (*IN*) bindata: ARRAY OF CARD8;  pos: CARDINAL): BN;
+
+    (* Converts an ASN.1 BIT STRING to a Bignum.  Returns zero if an    *)
+    (* INTEGER does not start at bindata[pos].                          *)
+
+PROCEDURE BitStringToBN (VAR (*IN*) bindata: ARRAY OF CARD8;  pos: CARDINAL): BN;
+
+    (* Converts an ASN.1 BIT STRING to a Bignum.  Returns zero if a BIT *)
+    (* STRING does not start at bindata[pos].                           *)
+
+PROCEDURE GetObjID (VAR (*IN*) bindata: ARRAY OF CARD8;  pos: CARDINAL;
+                           VAR (*OUT*) result: ARRAY OF CARDINAL): CARDINAL;
+
+    (* Converts an ASN.1 BIT STRING to an OBJECT ID.  Returns the       *)
+    (* number of components, or zero if an object ID does not start at  *)
+    (* bindata[pos].                                                    *)
+
+END ASN1.
+

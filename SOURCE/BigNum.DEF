@@ -1,0 +1,197 @@
+DEFINITION MODULE BigNum;
+
+        (********************************************************)
+        (*                                                      *)
+        (*           Support for multibit integers              *)
+        (*                                                      *)
+        (*  Programmer:         P. Moylan                       *)
+        (*  Started:            12 November 2017                *)
+        (*  Last edited:        16 October 2018                 *)
+        (*  Status:             OK                              *)
+        (*                                                      *)
+        (********************************************************)
+
+
+
+FROM SYSTEM IMPORT CARD8;
+
+TYPE BN;    (* is private *)
+
+(********************************************)
+(*****              OUTPUT              *****)
+(********************************************)
+
+PROCEDURE ShowBNUsage;
+
+    (* Reports how much memory is being used by Bignums.  *)
+
+PROCEDURE WriteBignum (A: BN);
+
+    (* Writes N in decimal to standard output. *)
+
+(********************************************)
+(***** CREATING AND DESTROYING A BIGNUM *****)
+(********************************************)
+
+PROCEDURE BinToBN (VAR (*IN*) bindata: ARRAY OF CARD8;  pos, N: CARDINAL): BN;
+
+    (* Converts a string of N CARD8 values, starting at bindata[pos],   *)
+    (* to a Bignum.                                                     *)
+
+PROCEDURE BNtoBytes (V: BN;  VAR (*OUT*) result: ARRAY OF CARD8): CARDINAL;
+
+    (* Converts an unsigned Bignum to an array of CARD8 values, in      *)
+    (* BigEndian order with no leading zero bytes.  The function result *)
+    (* is the number of bytes in the result.                            *)
+    (* Warning: for a negative number we convert only the magnitude.    *)
+
+PROCEDURE MakeBignum (N: INTEGER): BN;
+
+    (* Converts integer to BN. *)
+
+PROCEDURE Zero(): BN;
+
+    (* Returns a BigNum with value zero.  *)
+
+PROCEDURE Card (num: BN): CARDINAL;
+
+    (* Converts BN to cardinal, saturating result if out of range. *)
+
+PROCEDURE Discard (VAR (*INOUT*) num: BN);
+
+    (* Deallocates the storage used by num. *)
+
+PROCEDURE CopyBN (A: BN): BN;
+
+    (* Returns a copy of A. *)
+
+(********************************************)
+(*****              SHIFTS              *****)
+(********************************************)
+
+PROCEDURE LSBN (VAR (*INOUT*) V: BN;  N: CARDINAL);
+
+    (* Shifts V left by N binary digits. *)
+
+PROCEDURE RSBN (VAR (*INOUT*) V: BN;  N: CARDINAL);
+
+    (* Shifts V right by N binary digits. *)
+
+(********************************************)
+(*****            COMPARISONS           *****)
+(********************************************)
+
+PROCEDURE Sign (val: BN): INTEGER;
+
+    (* Returns -1 if val < 0, 0 if val = 0, +1 if val > 0.  *)
+
+PROCEDURE IsZero (val: BN): BOOLEAN;
+
+    (* Returns TRUE iff val = 0 *)
+
+PROCEDURE IsOdd (A: BN): BOOLEAN;
+
+    (* Returns TRUE iff A is an odd number.  *)
+
+PROCEDURE Eq (A: BN;  N: CARDINAL): BOOLEAN;
+
+    (* Returns TRUE iff A = N *)
+
+PROCEDURE Cmp (A, B: BN): INTEGER;
+
+    (* Comparison.  Returns -1 if A < B, 0 if A = B, and +1 if A > B.  *)
+
+(********************************************)
+(*****             ARITHMETIC           *****)
+(********************************************)
+
+PROCEDURE LowWord (A: BN): CARDINAL;
+
+    (* Returns the least significant word of the value of A. *)
+
+PROCEDURE Negate (A: BN);
+
+    (* Changes the sign of A.  *)
+
+PROCEDURE Incr (A: BN);
+
+    (* Increases the value of A by 1. *)
+
+PROCEDURE Decr (A: BN);
+
+    (* Reduces the value of A by 1. *)
+
+PROCEDURE Sum (A, B: BN): BN;
+
+    (* Returns A+B. *)
+
+PROCEDURE Diff (A, B: BN): BN;
+
+    (* Returns A-B. *)
+
+PROCEDURE Prod (A,B: BN): BN;
+
+    (* Returns A*B.  *)
+
+PROCEDURE Divide (A, B: BN;  VAR (*OUT*) Q, R: BN);
+
+    (* Divides A by B, returns quotient and remainder.  This might *)
+    (* need more work for negative A or B.                         *)
+
+PROCEDURE Double (A: BN);
+
+    (* In-place multiplication by two.  *)
+
+PROCEDURE Halve (A: BN);
+
+    (* In-place division by two.  We round towards zero.  *)
+
+(********************************************)
+(*****  MISCELLANEOUS OTHER FUNCTIONS  ******)
+(********************************************)
+
+PROCEDURE Nbits (A: BN): CARDINAL;
+
+    (* Returns the number of significant bits in A.  Equivalently,      *)
+    (* returns an N such that A >= 2^(N-1) but A < 2^N.                 *)
+    (* Special case: if A is zero we return 0.                          *)
+
+PROCEDURE Digits (A: BN): CARDINAL;
+
+    (* An estimate of the number of decimal digits in A.  Since we      *)
+    (* don't calculate this precisely, we err if necessary on the high  *)
+    (* side.  For negative A, we count the '-' as an extra "digit".     *)
+
+PROCEDURE ModularPower (base, exponent, modulus: BN): BN;
+
+    (* Calculates base^exponent MOD modulus.  We use the traditional    *)
+    (* fast squaring method, but with modular reduction to stop the     *)
+    (* intermediate results from getting too large.                     *)
+
+PROCEDURE Rand (N: CARDINAL): BN;
+
+    (* Produces a random N-word nonnegative number.  *)
+
+(********************************************)
+(***** CONVERSION FROM/TO ALPHANUMERIC ******)
+(********************************************)
+
+PROCEDURE FromHex (hexdata: ARRAY OF CHAR): BN;
+
+    (* Converts hexadecimal string to BN. *)
+
+PROCEDURE ToHex (A: BN;  VAR (*OUT*) buffer: ARRAY OF CHAR;  bufsize: CARDINAL);
+
+    (* Puts A in buffer in hexadecimal. *)
+
+PROCEDURE FromDecimal (decdata: ARRAY OF CHAR): BN;
+
+    (* Converts decimal string to BN. *)
+
+PROCEDURE ToDecimal (A: BN;  VAR (*OUT*) buffer: ARRAY OF CHAR;
+                                            VAR (*INOUT*) pos: CARDINAL);
+
+    (* Puts A at buffer[pos] in decimal, updates pos. *)
+
+END BigNum.
+

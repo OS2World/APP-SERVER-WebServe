@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*  Web server session manager                                            *)
+(*  Web server input stream handler                                       *)
 (*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
@@ -20,67 +20,60 @@
 (*                                                                        *)
 (**************************************************************************)
 
-DEFINITION MODULE Requests;
+DEFINITION MODULE NetStream;
 
         (********************************************************)
         (*                                                      *)
-        (*            Handle requests to web server             *)
+        (*          Handler for I/O through either a TLS        *)
+        (*          channel or directly through a socket        *)
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
-        (*  Started:            1 March 2015                    *)
-        (*  Last edited:        11 November 2018                *)
-        (*  Status:             OK                              *)
+        (*  Started:            2 April 2018                    *)
+        (*  Last edited:        11 August 2018                  *)
+        (*  Status:             Socket part working             *)
         (*                                                      *)
         (********************************************************)
 
 
-FROM NetStream IMPORT
-    (* type *)  NStream;
-
-FROM Semaphores IMPORT
-    (* type *)  Semaphore;
-
-FROM Watchdog IMPORT
-    (* type *)  WatchdogID;
+FROM SYSTEM IMPORT CARD8, LOC;
 
 FROM TransLog IMPORT
-    (* type *)  LogContext, TransactionLogID;
+    (* type *)  TransactionLogID;
 
+FROM Sockets IMPORT
+    (* type *)  Socket;
 
-TYPE Session;       (* is private *)
+TYPE NStream;           (* is private *)
 
+PROCEDURE OpenNetStream (S: Socket;  IsServer: BOOLEAN;
+                        logID: TransactionLogID;  TLS: BOOLEAN): NStream;
 
-PROCEDURE LContext(): LogContext;
+    (* Opens a new NStream object that handles socket data. *)
 
-    (* Returns the log context used for transaction logging. *)
+PROCEDURE CloseNetStream (VAR (*INOUT*) stream: NStream);
 
-PROCEDURE LoadReqINIData (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
+    (* Deletes the stream. *)
 
-    (* Loads INI data needed to handle requests. *)
+PROCEDURE GetLine (stream: NStream;  VAR (*OUT*) line: ARRAY OF CHAR): BOOLEAN;
 
-PROCEDURE OpenSession (NS: NStream;  ID: TransactionLogID;
-                            ClientName: ARRAY OF CHAR;
-                            WID: WatchdogID): Session;
+    (* Gets one line from the specified stream.  Returns a FALSE        *)
+    (* result, with no data, at end of stream.                          *)
 
-    (* Creates the session state for a new session. *)
+PROCEDURE GetBytes (stream: NStream;  VAR (*OUT*) result: ARRAY OF CHAR;
+                        wanted: CARDINAL;  VAR (*OUT*) actual: CARDINAL);
 
-PROCEDURE CloseSession (VAR (*INOUT*) sess: Session);
+    (* Gets at most wanted chars into result,  Returns actual as the    *)
+    (* number of characters found.                                      *)
 
-    (* Terminates a session. *)
+PROCEDURE PutBytes (stream: NStream;  VAR (*IN*) message: ARRAY OF LOC;
+                                                length: CARDINAL): CARDINAL;
 
-PROCEDURE HandleOneRequest (sess: Session;
-                                VAR (*OUT*) mustclose: BOOLEAN): BOOLEAN;
+    (* Sends a message of "length" bytes.  The returned value is the number *)
+    (* of bytes sent, or MAX(CARDINAL) if there was an error.               *)
 
-    (* Deals with a request to the server. *)
+PROCEDURE PutEOL (stream: NStream);
 
-PROCEDURE ExecProgram (sess: Session;  progname, outfile: ARRAY OF CHAR);
+    (* Sends CRLF.  *)
 
-    (* Executes a CGI application.  Progname specifies the program or   *)
-    (* script to be executed, optionally followed by a '?' followed by  *)
-    (* parameters to be sent to the program.  If outfile is a nonempty  *)
-    (* string then we create a file with that name and write program    *)
-    (* output to that file.  Otherwise program output is sent to the    *)
-    (* socket for this session.                                         *)
-
-END Requests.
+END NetStream.
 

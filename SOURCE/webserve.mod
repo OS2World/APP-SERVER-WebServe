@@ -28,7 +28,7 @@ MODULE WebServe;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        10 March 2018                   *)
+        (*  Last edited:        13 November 2018                *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (*     The relevant standard is RFC2616                 *)
@@ -44,6 +44,7 @@ MODULE WebServe;
 (*      Only requests handled are GET, HEAD, and POST.                  *)
 (*      See comments at beginning of module Requests for some things    *)
 (*          not yet implemented.                                        *)
+(*      HTTPS not yet working.                                          *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -117,8 +118,15 @@ FROM Requests IMPORT
 
 (************************************************************************)
 
+TYPE
+    ServiceType = (HTTP, HTTPS);
+    SocketArray = ARRAY ServiceType OF Socket;
+    ServiceNameArray = ARRAY ServiceType OF ARRAY [0..4] OF CHAR;
+    CardArray = ARRAY ServiceType OF CARDINAL;
+
 CONST
     Nul = CHR(0);
+    ServiceName = ServiceNameArray {"HTTP", "HTTPS"};
 
 VAR
     (* Program name and version. *)
@@ -134,6 +142,18 @@ VAR
 
     UpdaterFlag: OS2.HEV;
 
+    (* Services enabled. *)
+
+    ServerEnabled: SYSTEM.CARD8;
+
+    (* Port for each service type. *)
+
+    ServerPort: CardArray;
+
+    (* Socket value for each service type. *)
+
+    MainSocket: SocketArray;
+
     (* Event semaphore by which an external program requests a shutdown. *)
 
     ExternalShutdownRequest: OS2.HEV;
@@ -147,12 +167,6 @@ VAR
 
     ScreenEnabled: BOOLEAN;
 
-    (* The socket on which we listen for connection attempts,   *)
-    (* and the server port on which we listen.                  *)
-
-    MainSocket: Socket;
-    ServerPort: CARDINAL;
-
 (************************************************************************)
 (*                           SHUTTING DOWN                              *)
 (************************************************************************)
@@ -161,7 +175,7 @@ PROCEDURE ShutdownChecker;
 
     (* A separate task that waits for a shutdown request.  *)
 
-    VAR StillRunning: BOOLEAN;
+    VAR StillRunning: BOOLEAN;  j: ServiceType;
 
     BEGIN
         StillRunning := TRUE;
@@ -170,9 +184,11 @@ PROCEDURE ShutdownChecker;
             RapidShutdown := ShutdownInProgress;
             ShutdownInProgress := TRUE;
             IF StillRunning THEN
-                IF MainSocket <> NotASocket THEN
-                    so_cancel (MainSocket);
-                END (*IF*);
+                FOR j := MIN(ServiceType) TO MAX(ServiceType) DO
+                    IF MainSocket[j] <> NotASocket THEN
+                        so_cancel (MainSocket[j]);
+                    END (*IF*);
+                END (*FOR*);
                 StillRunning := FALSE;
             END (*IF*);
         END (*WHILE*);
@@ -315,8 +331,14 @@ PROCEDURE LoadINIData;
             hini := OpenINIFile(ININame, FALSE);
         END (*IF*);
         IF INIValid (hini) THEN
-            IF NOT GetItem ("ServerPort", ServerPort) THEN
-                ServerPort := 80;
+            IF NOT GetItem ("Enable", ServerEnabled) THEN
+                ServerEnabled := 1;
+            END (*IF*);
+            IF NOT GetItem ("ServerPort2", ServerPort) THEN
+                IF NOT GetItem ("ServerPort", ServerPort[HTTP]) THEN
+                    ServerPort[HTTP] := 80;
+                END (*IF*);
+                ServerPort[HTTPS] := 443;
             END (*IF*);
             CloseINIFile (hini);
         END (*IF*);
@@ -433,12 +455,22 @@ PROCEDURE RunTheServer;
     (*        client.                                                               *)
     (*     6. Use "soclose" on your original socket to clean up at the end.         *)
 
+    TYPE
+        TestType = [0..1];
+        TestArray = ARRAY TestType OF Socket;
+
     VAR
         LogID: TransactionLogID;
         temp: CARDINAL;
+        SocketsToTest, DefaultSocketsToTest: TestArray;
+        ServiceToTestMap: ARRAY ServiceType OF TestType;
+        j: ServiceType;
+        k, nservice: TestType;
+        Enabled: ARRAY ServiceType OF BOOLEAN;
         ns: Socket;  myaddr, client: SockAddr;
         ExceptqActive: BOOLEAN;
         StartupSuccessful: BOOLEAN;
+        optval: CARDINAL;
         exRegRec: OS2.EXCEPTIONREGISTRATIONRECORD;
         message: ARRAY [0..127] OF CHAR;
         tzstring: ARRAY [0..7] OF CHAR;
@@ -499,49 +531,82 @@ PROCEDURE RunTheServer;
 
         (* Now start up the server. *)
 
+        Enabled[HTTP] := ODD(ServerEnabled);
+        Enabled[HTTPS] := ODD(ServerEnabled DIV 2);
         StartupSuccessful := FALSE;
 
-        MainSocket := socket (AF_INET, SOCK_STREAM, AF_UNSPEC);
+        FOR k := 0 TO MAX(TestType) DO
+            DefaultSocketsToTest[k] := NotASocket;
+        END (*FOR*);
+        nservice := 0;
 
-            (* Allow reuse of the port we're binding to. *)
+        FOR j := MIN(ServiceType) TO MAX(ServiceType) DO
 
-        temp := 1;
-        setsockopt (MainSocket, 0FFFFH, 4, temp, SIZE(CARDINAL));
+            MainSocket[j] := NotASocket;
 
-        Strings.Assign ("Listening on port ", message);
-        AppendCard (ServerPort, message);
-        Strings.Append (", socket ", message);
-        AppendCard (MainSocket, message);
-        LogTransaction (LogID, message);
+            IF Enabled[j] THEN
+                MainSocket[j] := socket (AF_INET, SOCK_STREAM, AF_UNSPEC);
+                ServiceToTestMap[j] := nservice;
+                DefaultSocketsToTest[nservice] := MainSocket[j];
+                INC (nservice);
 
-        (* Now have the socket, bind to our machine. *)
+                (* Allow reuse of the port we're binding to. *)
 
-        WITH myaddr DO
-            family := AF_INET;
-            WITH in_addr DO
-                port := Swap2 (ServerPort);
-                (* Bind to all interfaces. *)
-                addr := INADDR_ANY;
-                zero := Zero8;
-            END (*WITH*);
-        END (*WITH*);
-
-        IF bind (MainSocket, myaddr, SIZE(myaddr)) THEN
-
-            WriteError (LogID);
-            LogTransactionL (LogID, "Cannot bind to server port.");
-
-        ELSE
-
-            (* Go into listening mode. *)
-
-            IF listen (MainSocket, 5) THEN
-                WriteError (LogID);
+                optval := 1;
+                setsockopt (MainSocket[j], 0FFFFH, 4, optval, SIZE(optval));
             ELSE
-                StartupSuccessful := TRUE;
+                ServiceToTestMap[j] := MAX(TestType);
             END (*IF*);
 
-        END (*IF bind*);
+            Strings.Assign (ServiceName[j], message);
+            IF Enabled[j] THEN
+                Strings.Append (" listening on ", message);
+                Strings.Append ("all interfaces", message);
+                Strings.Append (", port ", message);
+                AppendCard (ServerPort[j], message);
+            ELSE
+                Strings.Append (" disabled.", message);
+            END (*IF*);
+            LogTransaction (LogID, message);
+
+            IF Enabled[j] THEN
+
+                (* Now have the socket, bind to our machine. *)
+
+                (* In the present version we bind to all interfaces for     *)
+                (* incoming connections, and only use BindAddr for          *)
+                (* outgoing mail -- see modules Domains and Delivery.       *)
+
+                WITH myaddr DO
+                    family := AF_INET;
+                    WITH in_addr DO
+                        port := Swap2 (ServerPort[j]);
+                        (*addr := BindAddr;*)
+                        addr := INADDR_ANY;
+                        zero := Zero8;
+                    END (*WITH*);
+                END (*WITH*);
+
+                IF bind (MainSocket[j], myaddr, SIZE(myaddr)) THEN
+
+                    WriteError (LogID);
+                    LogTransactionL (LogID, "Cannot bind to server port.");
+
+                ELSE
+
+                    (* Go into listening mode. *)
+
+                    IF listen (MainSocket[j], 5) THEN
+                        WriteError (LogID);
+                    ELSE
+                        StartupSuccessful := TRUE;
+                    END (*IF*);
+
+                END (*IF bind*);
+
+            END (*IF Enabled*);
+
+        END (*FOR*);
 
         IF StartupSuccessful THEN
 
@@ -551,6 +616,7 @@ PROCEDURE RunTheServer;
 
             (* Here's the main service loop. *)
 
+            (*
             WHILE WaitForSocket (MainSocket, MAX(CARDINAL)) > 0 DO
                 temp := SIZE(client);
                 ns := accept (MainSocket, client, temp);
@@ -561,12 +627,45 @@ PROCEDURE RunTheServer;
                     END (*IF*);
                 END (*IF*);
             END (*WHILE*);
+            *)
+
+            (* Here's the main service loop. *)
+
+            SocketsToTest := DefaultSocketsToTest;
+            WHILE select (SocketsToTest, nservice, 0, 0, MAX(CARDINAL)) > 0 DO
+                FOR j := MIN(ServiceType) TO MAX(ServiceType) DO
+                    IF Enabled[j] THEN
+                        k := ServiceToTestMap[j];
+                        IF SocketsToTest[k] <> NotASocket THEN
+                            temp := SIZE(client);
+                            ns := accept (MainSocket[j], client, temp);
+                            IF ns <> NotASocket THEN
+                                IF NOT NewSession (ns, client, LogID, j=HTTPS) THEN
+                                    LogTransactionL (LogID,
+                                        "Failed to create session");
+                                END (*IF*);
+                            END (*IF*);
+                        END (*IF*);
+                    END (*IF*);
+                END (*FOR*);
+                SocketsToTest := DefaultSocketsToTest;
+            END (*WHILE*);
+
+            (* Close all open main sockets. *)
+
+            FOR j := MIN(ServiceType) TO MAX(ServiceType) DO
+                IF (MainSocket[j] <> NotASocket) AND soclose(MainSocket[j]) THEN
+                    psock_errno ("");
+                END (*IF*);
+            END (*FOR*);
 
             (* Close the main socket. *)
 
+            (*
             IF  soclose(MainSocket) THEN
                 psock_errno ("");
             END (*IF*);
+            *)
 
         END (*IF*);
 
@@ -598,8 +697,9 @@ PROCEDURE RunTheServer;
 BEGIN
     GetProgramName (ProgVersion);
     ScreenEnabled := NotDetached();
+    ServerEnabled := 1;
     UseTNI := FALSE;
-    ServerPort := 80;
+    ServerPort[HTTP] := 80;
     ShutdownInProgress := FALSE;  RapidShutdown := FALSE;
     CreateSemaphore (TaskDone, 0);
     CreateSemaphore (ShutdownRequest, 0);

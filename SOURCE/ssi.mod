@@ -31,7 +31,7 @@ IMPLEMENTATION MODULE SSI;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            2 May 2015                      *)
-        (*  Last edited:        10 March 2018                   *)
+        (*  Last edited:        11 November 2018                *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (*  Directives handled so far:                          *)

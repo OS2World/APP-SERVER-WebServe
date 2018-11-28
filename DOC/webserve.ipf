@@ -20,7 +20,7 @@ but no comparative timing tests have been done.
 It is distributed as open-source freeware subject to the GNU GPL
 licence. The source code is included in the zip file.
 
-:p.This documentation is for version 1.8.
+:p.This documentation is for version 1.9.
 
 :p.
 :hp2.Disclaimer of Warranty:ehp2.

@@ -1,0 +1,103 @@
+(**************************************************************************)
+(*                                                                        *)
+(*  Web server input stream handler                                       *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
+(*                                                                        *)
+(*  This program is free software: you can redistribute it and/or modify  *)
+(*  it under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 3 of the License, or     *)
+(*  (at your option) any later version.                                   *)
+(*                                                                        *)
+(*  This program is distributed in the hope that it will be useful,       *)
+(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
+(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
+(*  GNU General Public License for more details.                          *)
+(*                                                                        *)
+(*  You should have received a copy of the GNU General Public License     *)
+(*  along with this program.  If not, see <http://www.gnu.org/licenses/>. *)
+(*                                                                        *)
+(*  To contact author:   http://www.pmoylan.org   peter@pmoylan.org       *)
+(*                                                                        *)
+(**************************************************************************)
+
+DEFINITION MODULE TLSBase;
+
+        (********************************************************)
+        (*                                                      *)
+        (*                Transport Layer Security              *)
+        (*     Procedures and data needed by all TLS modules    *)
+        (*                                                      *)
+        (*  Programmer:         P. Moylan                       *)
+        (*  Started:            2 April 2018                    *)
+        (*  Last edited:        3 October 2018                  *)
+        (*  Status:             OK                              *)
+        (*                                                      *)
+        (********************************************************)
+
+
+FROM SYSTEM IMPORT
+    (* type *)  CARD8, CARD16, LOC;
+
+FROM VarStrings IMPORT
+    (* type *)  ByteStringPtr;
+
+FROM TransLog IMPORT
+    (* type *)  TransactionLogID;
+
+
+
+PROCEDURE BEeval (N: CARD16): CARD16;
+
+    (* Returns the value of a bigendian number. *)
+
+PROCEDURE WriteHex (N: CARD8);
+
+    (* Write N in hexadecimal.  *)
+
+PROCEDURE WriteHexString (VAR (*IN*) buf: ARRAY OF LOC;  pos, N: CARDINAL;
+                                                            space: BOOLEAN);
+
+    (* Write N bytes starting at buf[pos].  *)
+
+PROCEDURE AppendHexString (VAR (*IN*) buf: ARRAY OF LOC;  pos, N: CARDINAL;
+                        space: BOOLEAN;  VAR (*INOUT*) message: ARRAY OF CHAR);
+
+    (* Append N bytes starting at buf[pos] to message.  *)
+
+PROCEDURE WriteCard (N: CARDINAL);
+
+    (* Write N in decimal.  *)
+
+PROCEDURE NYI (logID: TransactionLogID;  name: ARRAY OF CHAR);
+
+    (* Puts out a "not yet implemented" message. *)
+
+PROCEDURE Get3Bytes (VAR (*IN*) A: ARRAY OF CARD8;
+                              VAR (*INOUT*) pos: CARDINAL): CARDINAL;
+
+    (* Picks up a three-byte value, in BigEndian format, at A[pos], and *)
+    (* updates pos.                                                     *)
+
+PROCEDURE Put3Bytes (VAR (*OUT*) A: ARRAY OF CARD8;  val: CARDINAL);
+
+    (* Stores val, in BigEndian format, as a three-byte value at A.    *)
+
+PROCEDURE Resize (VAR (*INOUT*) p: ByteStringPtr;
+                     VAR (*INOUT*) recsize: CARDINAL;  newsize: CARDINAL);
+
+    (* On entry, p^ has recsize bytes of space allocated.  We       *)
+    (* contract or expand the record, if necessary, to size newsize.*)
+
+PROCEDURE Checksize (VAR (*INOUT*) p: ByteStringPtr;
+                     VAR (*INOUT*) recsize: CARDINAL;
+                                    length, incr: CARDINAL);
+
+    (* On entry, p^ has recsize bytes of space allocated, and           *)
+    (* length bytes actually used.  We expand the record, if necessary, *)
+    (* to allow at least an additional incr bytes.  For efficiency we   *)
+    (* usually expand by more than was requested; so, after you've      *)
+    (* finished building this record, you must call Resize to contract  *)
+    (* back to the final size.                                          *)
+
+END TLSBase.
+

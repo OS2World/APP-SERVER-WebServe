@@ -6,7 +6,7 @@ DEFINITION MODULE Arith64;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            17 October 2001                 *)
-        (*  Last edited:        12 November 2017                *)
+        (*  Last edited:        22 June 2018                    *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -62,6 +62,10 @@ PROCEDURE Sub64 (VAR (*INOUT*) A: CARD64;  B: CARDINAL);
 
     (* Computes  A := A - B.  This differs from Diff64 (below) in the   *)
     (* type of B, and in the way the result is returned.                *)
+
+PROCEDURE INC64 (VAR (*INOUT*) A: CARD64);
+
+    (* Increments A by 1.  *)
 
 PROCEDURE DEC64 (VAR (*INOUT*) A: CARD64);
 

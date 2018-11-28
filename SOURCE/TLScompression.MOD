@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*  Web server session manager                                            *)
+(*  Web server input stream handler                                       *)
 (*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
@@ -20,67 +20,34 @@
 (*                                                                        *)
 (**************************************************************************)
 
-DEFINITION MODULE Requests;
+IMPLEMENTATION MODULE TLScompression;
 
         (********************************************************)
         (*                                                      *)
-        (*            Handle requests to web server             *)
+        (* Interface between TLS and the compression algorithms *)
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
-        (*  Started:            1 March 2015                    *)
-        (*  Last edited:        11 November 2018                *)
+        (*  Started:            5 April 2018                    *)
+        (*  Last edited:        5 April 2018                    *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
 
 
-FROM NetStream IMPORT
-    (* type *)  NStream;
+(************************************************************************)
+(*                            METHOD SUPPORTED                          *)
+(************************************************************************)
 
-FROM Semaphores IMPORT
-    (* type *)  Semaphore;
+PROCEDURE CompressionSupported (N: CARDINAL): CompressionMethod;
 
-FROM Watchdog IMPORT
-    (* type *)  WatchdogID;
+    (* Returns the compression method if method N supported,    *)
+    (* otherwise returns nocompression.                         *)
 
-FROM TransLog IMPORT
-    (* type *)  LogContext, TransactionLogID;
+    BEGIN
+        RETURN nocompression;
+    END CompressionSupported;
 
+(************************************************************************)
 
-TYPE Session;       (* is private *)
-
-
-PROCEDURE LContext(): LogContext;
-
-    (* Returns the log context used for transaction logging. *)
-
-PROCEDURE LoadReqINIData (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
-
-    (* Loads INI data needed to handle requests. *)
-
-PROCEDURE OpenSession (NS: NStream;  ID: TransactionLogID;
-                            ClientName: ARRAY OF CHAR;
-                            WID: WatchdogID): Session;
-
-    (* Creates the session state for a new session. *)
-
-PROCEDURE CloseSession (VAR (*INOUT*) sess: Session);
-
-    (* Terminates a session. *)
-
-PROCEDURE HandleOneRequest (sess: Session;
-                                VAR (*OUT*) mustclose: BOOLEAN): BOOLEAN;
-
-    (* Deals with a request to the server. *)
-
-PROCEDURE ExecProgram (sess: Session;  progname, outfile: ARRAY OF CHAR);
-
-    (* Executes a CGI application.  Progname specifies the program or   *)
-    (* script to be executed, optionally followed by a '?' followed by  *)
-    (* parameters to be sent to the program.  If outfile is a nonempty  *)
-    (* string then we create a file with that name and write program    *)
-    (* output to that file.  Otherwise program output is sent to the    *)
-    (* socket for this session.                                         *)
-
-END Requests.
+END TLScompression.
 

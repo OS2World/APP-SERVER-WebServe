@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*  Web server session manager                                            *)
+(*  Web server input stream handler                                       *)
 (*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
@@ -20,67 +20,60 @@
 (*                                                                        *)
 (**************************************************************************)
 
-DEFINITION MODULE Requests;
+DEFINITION MODULE CipherSuites;
 
         (********************************************************)
         (*                                                      *)
-        (*            Handle requests to web server             *)
+        (*  Interface between TLS and the encryption algorithms *)
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
-        (*  Started:            1 March 2015                    *)
-        (*  Last edited:        11 November 2018                *)
+        (*  Started:            27 August 2018                  *)
+        (*  Last edited:        27 August 2018                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
 
 
-FROM NetStream IMPORT
-    (* type *)  NStream;
+FROM SYSTEM IMPORT CARD8;
 
-FROM Semaphores IMPORT
-    (* type *)  Semaphore;
+TYPE
+    (* The cipher suites that I need to know about.  I've omitted the   *)
+    (* Diffie-Helman suites, for example, because at the moment I don't *)
+    (* have plans to implement them.  The presence of a suite in this   *)
+    (* list does not imply that we support it.                          *)
 
-FROM Watchdog IMPORT
-    (* type *)  WatchdogID;
+    CipherSuite = (TLS_NULL_WITH_NULL_NULL,
+                   TLS_RSA_WITH_NULL_MD5,
+                   TLS_RSA_WITH_NULL_SHA,
+                   TLS_RSA_WITH_NULL_SHA256,
+                   TLS_RSA_WITH_RC4_128_MD5,
+                   TLS_RSA_WITH_RC4_128_SHA,
+                   TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+                   TLS_RSA_WITH_AES_128_CBC_SHA,
+                   TLS_RSA_WITH_AES_256_CBC_SHA,
+                   TLS_RSA_WITH_AES_128_CBC_SHA256,
+                   TLS_RSA_WITH_AES_256_CBC_SHA256
+                   );
 
-FROM TransLog IMPORT
-    (* type *)  LogContext, TransactionLogID;
+CONST
+    NullSuite = TLS_NULL_WITH_NULL_NULL;
 
 
-TYPE Session;       (* is private *)
+PROCEDURE NameOfSuite (s: CipherSuite;  VAR (*OUT*) name: ARRAY OF CHAR);
 
+    (* Returns name as the name of ciphersuite s. *)
 
-PROCEDURE LContext(): LogContext;
+PROCEDURE CodeToCipherSuite (code1, code2: CARD8): CipherSuite;
 
-    (* Returns the log context used for transaction logging. *)
+    (* Translates two-byte code to a CipherSuite. *)
 
-PROCEDURE LoadReqINIData (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
+PROCEDURE CipherSuiteToCode (s: CipherSuite;  VAR (*OUT*) code1, code2: CARD8);
 
-    (* Loads INI data needed to handle requests. *)
+    (* Returns the two-byte code for s. *)
 
-PROCEDURE OpenSession (NS: NStream;  ID: TransactionLogID;
-                            ClientName: ARRAY OF CHAR;
-                            WID: WatchdogID): Session;
+PROCEDURE AcceptCipherSuite (code1, code2: CARD8): CipherSuite;
 
-    (* Creates the session state for a new session. *)
+    (* Returns result <> NullSuite iff we support this cipher suite. *)
 
-PROCEDURE CloseSession (VAR (*INOUT*) sess: Session);
-
-    (* Terminates a session. *)
-
-PROCEDURE HandleOneRequest (sess: Session;
-                                VAR (*OUT*) mustclose: BOOLEAN): BOOLEAN;
-
-    (* Deals with a request to the server. *)
-
-PROCEDURE ExecProgram (sess: Session;  progname, outfile: ARRAY OF CHAR);
-
-    (* Executes a CGI application.  Progname specifies the program or   *)
-    (* script to be executed, optionally followed by a '?' followed by  *)
-    (* parameters to be sent to the program.  If outfile is a nonempty  *)
-    (* string then we create a file with that name and write program    *)
-    (* output to that file.  Otherwise program output is sent to the    *)
-    (* socket for this session.                                         *)
-
-END Requests.
+END CipherSuites.
 

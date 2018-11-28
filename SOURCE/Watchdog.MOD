@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE Watchdog;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            27 December 2017                *)
-        (*  Last edited:        10 March 2018                   *)
+        (*  Last edited:        14 September 2018               *)
         (*  Status:             Appears to be working           *)
         (*                                                      *)
         (********************************************************)
@@ -238,7 +238,8 @@ PROCEDURE DumpList (label: ARRAY OF CHAR);
 
 PROCEDURE DumpWatchdogState (sleepsecs, overshoot: CARDINAL);
 
-    (* Dumps the state of the watchdog thread. *)
+    (* Dumps the state of the watchdog thread.  We assume that the      *)
+    (* caller has exclusive access to the WatchList.                    *)
 
     VAR label: ARRAY [0..79] OF CHAR;
         pos: CARDINAL;
@@ -288,12 +289,10 @@ PROCEDURE HangIfDiscrepancy (msg: ARRAY OF CHAR);
 (*                   ADDING AND REMOVING LIST ENTRIES                   *)
 (************************************************************************)
 
-PROCEDURE Reinsert (p: WatchdogID);
+PROCEDURE ReinsertI (p: WatchdogID);
 
-    (* Assumption: the item to be inserted is not currently in the      *)
-    (* list.  We also assume that the insertion position is likely to   *)
-    (* be towards the end of the list, but if that assumption is wrong  *)
-    (* only the efficiency is affected.                                 *)
+    (* The internal version of Reinsert (see below) without the         *)
+    (* critical section protection.                                     *)
 
     VAR before, after: WatchdogID;
         T, thisT: CARDINAL;
@@ -302,9 +301,8 @@ PROCEDURE Reinsert (p: WatchdogID);
         <* END *>
 
     BEGIN
-        Obtain (WatchList.access);
         <* IF WATCHTEST THEN *>
-            HangIfDiscrepancy ("Entering Reinsert");
+            HangIfDiscrepancy ("Entering ReinsertI");
         <* END *>
 
         (* Find the right insertion point. *)
@@ -323,7 +321,11 @@ PROCEDURE Reinsert (p: WatchdogID);
         WHILE (before <> NIL) AND (T > thisT) DO
             after := before;
             before := before^.previous;
-            DEC (T, after^.deltatime);
+            IF T < after^.deltatime THEN
+                T := 0;         (* should never happen *)
+            ELSE
+                DEC (T, after^.deltatime);
+            END (*IF*);
         END (*WHILE*);
 
         (* Insert between before^ and after^.  *)
@@ -353,14 +355,27 @@ PROCEDURE Reinsert (p: WatchdogID);
         p^.onlist := TRUE;
 
         <* IF WATCHTEST THEN *>
-            msg := "After Reinsert, LastTime = ";
+            msg := "After ReinsertI, LastTime = ";
             AppendCard (LastTime, msg);
             DumpList (msg);
-            HangIfDiscrepancy ("Leaving Reinsert");
+            HangIfDiscrepancy ("Leaving ReinsertI");
         <* END *>
 
-        Release (WatchList.access);
+    END ReinsertI;
 
+(************************************************************************)
+
+PROCEDURE Reinsert (p: WatchdogID);
+
+    (* Assumption: the item to be inserted is not currently in the      *)
+    (* list.  We also assume that the insertion position is likely to   *)
+    (* be towards the end of the list, but that assumption affects only *)
+    (* efficiency, not correctness.                                     *)
+
+    BEGIN
+        Obtain (WatchList.access);
+        ReinsertI (p);
+        Release (WatchList.access);
     END Reinsert;
 
 (************************************************************************)
@@ -376,7 +391,7 @@ PROCEDURE AddToWatches (timeout: CARDINAL;
     BEGIN
         NEW (result);
         result^.previous := NIL;  result^.next := NIL;
-        result^.timeout := timeout;
+        result^.timeout := timeout;  result^.onlist := FALSE;
         result^.tocall := handler;  result^.arg := arg;
         Reinsert (result);
         RETURN result;
@@ -384,10 +399,10 @@ PROCEDURE AddToWatches (timeout: CARDINAL;
 
 (************************************************************************)
 
-PROCEDURE DetachFromList (ID: WatchdogID);
+PROCEDURE DetachFromListI (ID: WatchdogID);
 
-    (* Removes this entry from the watchdog list, without   *)
-    (* destroying it.                                       *)
+    (* The internal version of DetachFromList (see below) without   *)
+    (* critical section protection.                                 *)
 
     VAR before, after: WatchdogID;
         <* IF WATCHTEST THEN *>
@@ -395,12 +410,11 @@ PROCEDURE DetachFromList (ID: WatchdogID);
         <* END *>
 
     BEGIN
-        Obtain (WatchList.access);
         <* IF WATCHTEST THEN *>
-            msg := "Before DetachFromList, LastTime = ";
+            msg := "Before DetachFromListI, LastTime = ";
             AppendCard (LastTime, msg);
             DumpList (msg);
-            HangIfDiscrepancy ("Entering DetachFromList");
+            HangIfDiscrepancy ("Entering DetachFromListI");
         <* END *>
         before := ID^.previous;  ID^.previous := NIL;
         after := ID^.next;  ID^.next := NIL;
@@ -411,18 +425,45 @@ PROCEDURE DetachFromList (ID: WatchdogID);
         END (*IF*);
         IF after = NIL THEN
             WatchList.tail := before;
-            DEC (LastTime, ID^.deltatime);
+            IF LastTime < ID^.deltatime THEN
+                LastTime := 0;          (* should never happen *)
+            ELSE
+                DEC (LastTime, ID^.deltatime);
+            END (*IF*);
         ELSE
             after^.previous := before;
             INC (after^.deltatime, ID^.deltatime);
         END (*IF*);
         ID^.onlist := FALSE;
         <* IF WATCHTEST THEN *>
-            msg := "After DetachFromList, LastTime = ";
+            msg := "After DetachFromListI, LastTime = ";
             AppendCard (LastTime, msg);
             DumpList (msg);
-            HangIfDiscrepancy ("Leaving DetachFromList");
+            HangIfDiscrepancy ("Leaving DetachFromListI");
         <* END *>
+    END DetachFromListI;
+
+(************************************************************************)
+
+PROCEDURE DetachFromList (ID: WatchdogID);
+
+    (* Removes this entry from the watchdog list, without   *)
+    (* destroying it.                                       *)
+
+    (* Possible race: this procedure can be called in a user thread     *)
+    (* just when the watchdog thread is in the process of removing this *)
+    (* ID from the WatchList.  If we get in first there is no problem,  *)
+    (* because then this procedure will complete execution and the      *)
+    (* watchdog thread will never see this ID.  Otherwise, we will      *)
+    (* initially be blocked on WatchList.access; then, when we pass the *)
+    (* Obtain(), we will find that ID^.onlist is FALSE.  It is the      *)
+    (* "onlist" flag that resolves the conflict.                        *)
+
+    BEGIN
+        Obtain (WatchList.access);
+        IF ID^.onlist THEN
+            DetachFromListI (ID);
+        END (*IF*);
         Release (WatchList.access);
     END DetachFromList;
 
@@ -442,7 +483,7 @@ PROCEDURE DetachFirstFromList;
         WatchList.head := after;
         IF after = NIL THEN
             WatchList.tail := NIL;
-            DEC (LastTime, p^.deltatime);
+            LastTime := 0;
         ELSE
             after^.previous := NIL;
             INC (after^.deltatime, p^.deltatime);
@@ -459,6 +500,12 @@ PROCEDURE RemoveFromWatches (VAR (*INOUT*) ID: WatchdogID;  destroy: BOOLEAN);
 
     BEGIN
         IF (ID <> NIL)  THEN
+
+            (* There is potentially a critical race if more than one    *)
+            (* thread wants to remove this ID from the WatchList.       *)
+            (* DetachFromList resolves this problem by checking the     *)
+            (* flag ID^.onlist inside a protected critical section.     *)
+
             IF ID^.onlist THEN
                 DetachFromList (ID);
             END (*IF*);
@@ -482,8 +529,14 @@ PROCEDURE KickWatchdog (ID: WatchdogID);
         <* IF WATCHTEST THEN *>
             LogTransactionL (LogID, "KickWatchdog called");
         <* END *>
-        DetachFromList (ID);
-        Reinsert (ID);
+
+        (* The removal from the Watchlist and the reinsertion must be   *)
+        (* indivisible, to avoid a critical race.                       *)
+
+        Obtain (WatchList.access);
+        DetachFromListI (ID);
+        ReinsertI (ID);
+        Release (WatchList.access);
     END KickWatchdog;
 
 (************************************************************************)
@@ -598,10 +651,18 @@ PROCEDURE WatchdogThread;
         sleepsecs := 0;  overshoot := 0;
         WHILE NOT ShutDown DO
 
+            (* sleepsecs is the time (in seconds) that we should sleep  *)
+            (* this time around the loop.  There are some situations,   *)
+            (* including the first execution of this loop, when the     *)
+            (* sleep value is zero, but that is not a problem; it will  *)
+            (* resolved once we have dealt with all the pending timeout *)
+            (* cases.                                                   *)
+
             (* overshoot measures how far we are behind schedule.       *)
             (* Ideally it should always be zero, but if not we should   *)
-            (* sleep for (sleepsecs - overshoot) seconds.  In practice  *)
-            (* we might need to reduce it gradually.                    *)
+            (* sleep for (sleepsecs - overshoot) seconds.  The          *)
+            (* following code allows for the possibility that we will   *)
+            (* have to reduce overshoot gradually.                      *)
 
             IF overshoot > 0 THEN
                 IF sleepsecs >= overshoot THEN
@@ -612,6 +673,8 @@ PROCEDURE WatchdogThread;
                     sleepsecs := 0;
                 END (*IF*);
             END (*IF*);
+
+            (* Now we do the sleep, if required. *)
 
             IF sleepsecs > 0 THEN
                 <* IF WATCHTEST THEN *>
@@ -661,7 +724,11 @@ PROCEDURE WatchdogThread;
                 IF p^.deltatime > sleepsecs THEN
                     IF sleepsecs > 0 THEN
                         DEC (p^.deltatime, sleepsecs);
-                        DEC (LastTime, sleepsecs);
+                        IF LastTime < sleepsecs THEN
+                            LastTime := 0;          (* should never happen *)
+                        ELSE
+                            DEC (LastTime, sleepsecs);
+                        END (*IF*);
                     END (*IF*);
                     sleepsecs := p^.deltatime;
                 ELSE
@@ -673,6 +740,9 @@ PROCEDURE WatchdogThread;
                     DetachFirstFromList;
                     AddToKillQ (p);
                     sleepsecs := 0;
+
+                    (* sleepsecs will be recalculated on the next pass  *)
+                    (* through this loop body.                          *)
 
                 END (*IF*);
             END (*IF*);

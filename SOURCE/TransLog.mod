@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE TransLog;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            16 March 1999                   *)
-        (*  Last edited:        22 May 2017                     *)
+        (*  Last edited:        12 October 2018                 *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (*     Now working on the concept of having different   *)
@@ -171,7 +171,7 @@ TYPE
 CONST
     Nul = CHR(0);
     PreambleSize = 29;      (* typical, but give this a re-think. *)
-    MaxLineLength = 256+PreambleSize;
+    MaxLineLength = 1024+PreambleSize;
     BlankLine = "                                                                                ";
 
 TYPE

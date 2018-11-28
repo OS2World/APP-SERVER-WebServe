@@ -28,7 +28,7 @@ IMPLEMENTATION MODULE Arith64;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            17 October 2001                 *)
-        (*  Last edited:        8 January 2018                  *)
+        (*  Last edited:        22 June 2018                    *)
         (*  Status:             Working                         *)
         (*                                                      *)
         (********************************************************)
@@ -126,6 +126,21 @@ PROCEDURE Sub64 (VAR (*INOUT*) A: CARD64;  B: CARDINAL);
             A.low := A.low - B;
         END (*IF*);
     END Sub64;
+
+(************************************************************************)
+
+PROCEDURE INC64 (VAR (*INOUT*) A: CARD64);
+
+    (* Increments A by 1.  *)
+
+    BEGIN
+        IF A.low = MAX(CARDINAL) THEN
+            A.low := 0;
+            INC (A.high);
+        ELSE
+            INC (A.low);
+        END (*IF*);
+    END INC64;
 
 (************************************************************************)
 

@@ -1,0 +1,131 @@
+(**************************************************************************)
+(*                                                                        *)
+(*  Transport Layer Security                                              *)
+(*  Copyright (C) 2018   Peter Moylan                                     *)
+(*                                                                        *)
+(*  This program is free software: you can redistribute it and/or modify  *)
+(*  it under the terms of the GNU General Public License as published by  *)
+(*  the Free Software Foundation, either version 3 of the License, or     *)
+(*  (at your option) any later version.                                   *)
+(*                                                                        *)
+(*  This program is distributed in the hope that it will be useful,       *)
+(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
+(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
+(*  GNU General Public License for more details.                          *)
+(*                                                                        *)
+(*  You should have received a copy of the GNU General Public License     *)
+(*  along with this program.  If not, see <http://www.gnu.org/licenses/>. *)
+(*                                                                        *)
+(*  To contact author:   http://www.pmoylan.org   peter@pmoylan.org       *)
+(*                                                                        *)
+(**************************************************************************)
+
+DEFINITION MODULE TLSRecord;
+
+        (********************************************************)
+        (*                                                      *)
+        (*                The TLS record protocol               *)
+        (*                                                      *)
+        (*  Programmer:         P. Moylan                       *)
+        (*  Started:            2 April 2018                    *)
+        (*  Last edited:        12 October 2018                 *)
+        (*  Status:             Just starting                   *)
+        (*                                                      *)
+        (********************************************************)
+
+(************************************************************************)
+(*  NOTE ABOUT VERSIONS                                                 *)
+(*  Version numbering continues on from the SSL version numbers.        *)
+(*  Thus we have:                                                       *)
+(*          3.0 or lower    SSL versions pre-TLS                        *)
+(*          3.1             TSL version 1.0                             *)
+(*          3.2             TSL version 1.1                             *)
+(*          3.3             TSL version 1.2                             *)
+(*  I am still trying to understand the differences between these       *)
+(*  versions.  Firefox for OS/2 is still using 3.1, and this does       *)
+(*  make a difference to the handshake details for initial connection.  *)
+(************************************************************************)
+
+
+FROM SYSTEM IMPORT CARD8, CARD16;
+
+FROM Sockets IMPORT
+    (* type *)  Socket;
+
+FROM VarStrings IMPORT
+    (* type *)  ByteStringPtr;
+
+FROM TransLog IMPORT
+    (* type *)  TransactionLogID;
+
+
+TYPE
+    RLState;        (* is private *)
+
+    (* Plain text, compressed text, and ciphertext records all have the *)
+    (* same form: one-byte content type, two-byte version, two-byte     *)
+    (* length, and then the data fragment itself.                       *)
+
+    (* The content type codes are                                       *)
+    (*      20      change cipher spec                                  *)
+    (*      21      alert                                               *)
+    (*      22      handshake                                           *)
+    (*      23      application data                                    *)
+
+    TextType =  RECORD
+                    contenttype: CARD8;
+                    majversion, minversion: CARD8;
+                    length: CARD16;      (* BIGENDIAN *)
+                    fragment: ByteStringPtr;
+                END (*RECORD*);
+
+(************************************************************************)
+(*                              RECORD LAYER                            *)
+(************************************************************************)
+
+PROCEDURE TLSRecordInit(S: Socket): RLState;
+
+    (* Initialises the record layer state for a TLS session. *)
+
+PROCEDURE TLSRecordClose (VAR (*INOUT*) rlstate: RLState);
+
+    (* Closes this record layer state. *)
+
+PROCEDURE FirstNBytes (logID: TransactionLogID;  prefix: ARRAY OF CHAR;
+                                        buffer: TextType;  N: CARDINAL);
+
+    (* Writes out the first N bytes of buffer, including the header. *)
+
+PROCEDURE RecordTraceOn;
+
+    (* For testing/debugging.  Logs data sent or received until         *)
+    (* RecordTraceOff is called.  This is a module-wide setting rather  *)
+    (* that being specific to one thread, so it can be used only for    *)
+    (* simple tests.  (And should probably be deleted in the long run.) *)
+
+PROCEDURE RecordTraceOff;
+
+    (* Stops logging of data sent or received.  *)
+
+PROCEDURE GetFragment (sess: RLState;  logID: TransactionLogID;
+                                VAR (*OUT*) buffer: TextType): BOOLEAN;
+
+    (* Receives one record from the sender, in raw form.  It is up to   *)
+    (* the caller to work out what to do with this record.              *)
+
+    (* NOTE: We store buffer.length in BigEndian format.    *)
+
+PROCEDURE DiscardFragment (VAR (*INOUT*) buffer: TextType);
+
+    (* Releases memory held by this record. *)
+
+PROCEDURE PutFragment (sess: RLState;  logID: TransactionLogID;
+                            VAR (*IN*) buffer: TextType;  type: CARD8);
+
+    (* Sends buffer to the recipient.  This includes any necessary      *)
+    (* encryption and compression.                                      *)
+
+    (* NOTE: The caller must use BigEndian format for buffer.length.    *)
+
+END TLSRecord.
+

@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*  Web server session manager                                            *)
+(*  PMOS library                                                          *)
 (*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
@@ -20,67 +20,33 @@
 (*                                                                        *)
 (**************************************************************************)
 
-DEFINITION MODULE Requests;
+DEFINITION MODULE VarStrings;
 
         (********************************************************)
         (*                                                      *)
-        (*            Handle requests to web server             *)
+        (*                Variable-length strings               *)
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
-        (*  Started:            1 March 2015                    *)
-        (*  Last edited:        11 November 2018                *)
+        (*  Last edited:        3 October 2018                  *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
 
 
-FROM NetStream IMPORT
-    (* type *)  NStream;
-
-FROM Semaphores IMPORT
-    (* type *)  Semaphore;
-
-FROM Watchdog IMPORT
-    (* type *)  WatchdogID;
-
-FROM TransLog IMPORT
-    (* type *)  LogContext, TransactionLogID;
+FROM SYSTEM IMPORT CARD8;
 
 
-TYPE Session;       (* is private *)
+TYPE
+    VarStringPtr = POINTER TO ARRAY [0..65535] OF CHAR;
+    ByteStringPtr = POINTER TO ARRAY [0..65535] OF CARD8;
 
 
-PROCEDURE LContext(): LogContext;
+PROCEDURE WriteVarString (VAR (*IN*) str: ARRAY OF CHAR;  N: CARDINAL);
 
-    (* Returns the log context used for transaction logging. *)
+    (* Write character string of length N to standard output.   *)
+    (* Convention: we treat LF as the newline character, and    *)
+    (* ignore any CR encountered.                               *)
 
-PROCEDURE LoadReqINIData (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
 
-    (* Loads INI data needed to handle requests. *)
-
-PROCEDURE OpenSession (NS: NStream;  ID: TransactionLogID;
-                            ClientName: ARRAY OF CHAR;
-                            WID: WatchdogID): Session;
-
-    (* Creates the session state for a new session. *)
-
-PROCEDURE CloseSession (VAR (*INOUT*) sess: Session);
-
-    (* Terminates a session. *)
-
-PROCEDURE HandleOneRequest (sess: Session;
-                                VAR (*OUT*) mustclose: BOOLEAN): BOOLEAN;
-
-    (* Deals with a request to the server. *)
-
-PROCEDURE ExecProgram (sess: Session;  progname, outfile: ARRAY OF CHAR);
-
-    (* Executes a CGI application.  Progname specifies the program or   *)
-    (* script to be executed, optionally followed by a '?' followed by  *)
-    (* parameters to be sent to the program.  If outfile is a nonempty  *)
-    (* string then we create a file with that name and write program    *)
-    (* output to that file.  Otherwise program output is sent to the    *)
-    (* socket for this session.                                         *)
-
-END Requests.
+END VarStrings.
 

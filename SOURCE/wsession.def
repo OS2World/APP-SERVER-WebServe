@@ -28,7 +28,7 @@ DEFINITION MODULE WSession;
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
         (*  Started:            1 March 2015                    *)
-        (*  Last edited:        27 January 2018                 *)
+        (*  Last edited:        13 November 2018                *)
         (*  Status:             OK                              *)
         (*                                                      *)
         (********************************************************)
@@ -42,7 +42,7 @@ FROM TransLog IMPORT
 
 
 PROCEDURE NewSession (S: Socket;  addr: SockAddr;
-                         LogID: TransactionLogID): BOOLEAN;
+                      LogID: TransactionLogID;  useTLS: BOOLEAN): BOOLEAN;
 
     (* Starts and runs a client session.  The session runs in a         *)
     (* separate thread; this procedure returns after starting the       *)

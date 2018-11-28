@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*  Web server session manager                                            *)
+(*  Web server input stream handler                                       *)
 (*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
@@ -20,67 +20,45 @@
 (*                                                                        *)
 (**************************************************************************)
 
-DEFINITION MODULE Requests;
+DEFINITION MODULE TLS;
 
         (********************************************************)
         (*                                                      *)
-        (*            Handle requests to web server             *)
+        (*                Transport Layer Security              *)
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
-        (*  Started:            1 March 2015                    *)
-        (*  Last edited:        11 November 2018                *)
-        (*  Status:             OK                              *)
+        (*  Started:            2 April 2018                    *)
+        (*  Last edited:        11 September 2018               *)
+        (*  Status:             Just starting                   *)
         (*                                                      *)
         (********************************************************)
 
 
-FROM NetStream IMPORT
-    (* type *)  NStream;
+FROM SYSTEM IMPORT CARD8, LOC;
 
-FROM Semaphores IMPORT
-    (* type *)  Semaphore;
-
-FROM Watchdog IMPORT
-    (* type *)  WatchdogID;
+FROM Sockets IMPORT
+    (* type *)  Socket;
 
 FROM TransLog IMPORT
-    (* type *)  LogContext, TransactionLogID;
+    (* type *)  TransactionLogID;
 
 
-TYPE Session;       (* is private *)
+TYPE TLSsession;        (* is private *)
 
+PROCEDURE OpenTLSsession (S: Socket;  as_server: BOOLEAN;  logID: TransactionLogID): TLSsession;
 
-PROCEDURE LContext(): LogContext;
+    (* Opens a new connection. *)
 
-    (* Returns the log context used for transaction logging. *)
+PROCEDURE CloseTLSsession (VAR (*INOUT*) sess: TLSsession);
 
-PROCEDURE LoadReqINIData (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
+    (* Deletes the session data. *)
 
-    (* Loads INI data needed to handle requests. *)
+PROCEDURE TLSsend (sess: TLSsession;  VAR (*IN*) message: ARRAY OF LOC;
+                                                length: CARDINAL): CARDINAL;
 
-PROCEDURE OpenSession (NS: NStream;  ID: TransactionLogID;
-                            ClientName: ARRAY OF CHAR;
-                            WID: WatchdogID): Session;
+    (* Sends a message of "length" bytes on the output channel for this *)
+    (* session.  The returned value is the number of bytes sent, or     *)
+    (* MAX(CARDINAL) if there was an error.                             *)
 
-    (* Creates the session state for a new session. *)
-
-PROCEDURE CloseSession (VAR (*INOUT*) sess: Session);
-
-    (* Terminates a session. *)
-
-PROCEDURE HandleOneRequest (sess: Session;
-                                VAR (*OUT*) mustclose: BOOLEAN): BOOLEAN;
-
-    (* Deals with a request to the server. *)
-
-PROCEDURE ExecProgram (sess: Session;  progname, outfile: ARRAY OF CHAR);
-
-    (* Executes a CGI application.  Progname specifies the program or   *)
-    (* script to be executed, optionally followed by a '?' followed by  *)
-    (* parameters to be sent to the program.  If outfile is a nonempty  *)
-    (* string then we create a file with that name and write program    *)
-    (* output to that file.  Otherwise program output is sent to the    *)
-    (* socket for this session.                                         *)
-
-END Requests.
+END TLS.
 

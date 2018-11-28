@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*  Web server session manager                                            *)
+(*  TLS implementation                                                    *)
 (*  Copyright (C) 2018   Peter Moylan                                     *)
 (*                                                                        *)
 (*  This program is free software: you can redistribute it and/or modify  *)
@@ -20,67 +20,45 @@
 (*                                                                        *)
 (**************************************************************************)
 
-DEFINITION MODULE Requests;
+DEFINITION MODULE TLSCrypt;
 
         (********************************************************)
         (*                                                      *)
-        (*            Handle requests to web server             *)
+        (*  Interface between TLS and the encryption algorithms *)
         (*                                                      *)
         (*  Programmer:         P. Moylan                       *)
-        (*  Started:            1 March 2015                    *)
-        (*  Last edited:        11 November 2018                *)
-        (*  Status:             OK                              *)
+        (*  Started:            5 April 2018                    *)
+        (*  Last edited:        3 October 2018                  *)
+        (*  Status:             Just starting                   *)
         (*                                                      *)
         (********************************************************)
 
 
-FROM NetStream IMPORT
-    (* type *)  NStream;
-
-FROM Semaphores IMPORT
-    (* type *)  Semaphore;
-
-FROM Watchdog IMPORT
-    (* type *)  WatchdogID;
+FROM VarStrings IMPORT
+    (* type *)  ByteStringPtr;
 
 FROM TransLog IMPORT
-    (* type *)  LogContext, TransactionLogID;
+    (* type *)  TransactionLogID;
 
 
-TYPE Session;       (* is private *)
+TYPE
+    EncrRule;       (* is private *)
 
 
-PROCEDURE LContext(): LogContext;
+PROCEDURE InitEncryptionRule (): EncrRule;
 
-    (* Returns the log context used for transaction logging. *)
+    (* Creates an initial "no encryption" state. *)
 
-PROCEDURE LoadReqINIData (INIname: ARRAY OF CHAR;  UseTNI: BOOLEAN);
+PROCEDURE CloseEncryptionRule (VAR (*INOUT*) ER: EncrRule);
 
-    (* Loads INI data needed to handle requests. *)
+    (* Discards the EncrRule data. *)
 
-PROCEDURE OpenSession (NS: NStream;  ID: TransactionLogID;
-                            ClientName: ARRAY OF CHAR;
-                            WID: WatchdogID): Session;
+PROCEDURE Encrypt (rule: EncrRule;  logID: TransactionLogID;
+                   VAR (*INOUT*) message: ByteStringPtr;  length: CARDINAL)
+                                                               : CARDINAL;
 
-    (* Creates the session state for a new session. *)
+    (* The message is replaced by its encrypted version.  The returned  *)
+    (* value is the new length.                                         *)
 
-PROCEDURE CloseSession (VAR (*INOUT*) sess: Session);
-
-    (* Terminates a session. *)
-
-PROCEDURE HandleOneRequest (sess: Session;
-                                VAR (*OUT*) mustclose: BOOLEAN): BOOLEAN;
-
-    (* Deals with a request to the server. *)
-
-PROCEDURE ExecProgram (sess: Session;  progname, outfile: ARRAY OF CHAR);
-
-    (* Executes a CGI application.  Progname specifies the program or   *)
-    (* script to be executed, optionally followed by a '?' followed by  *)
-    (* parameters to be sent to the program.  If outfile is a nonempty  *)
-    (* string then we create a file with that name and write program    *)
-    (* output to that file.  Otherwise program output is sent to the    *)
-    (* socket for this session.                                         *)
-
-END Requests.
+END TLSCrypt.
 

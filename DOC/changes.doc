@@ -1,5 +1,8 @@
 LIST OF CHANGES
 
+Version 1.9         (13 Nov 2018)
+    CGI GET made more responsive.
+
 Version 1.8         (10 Mar 2018)
     Implemented CGI POST, with minimal testing.
     Added script ShutWS.cmd to distribution.
